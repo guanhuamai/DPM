@@ -7,9 +7,6 @@ from scipy import optimize
 #import mall_process
 global nodes, edges, M, BaseMatrix
 
-
-
-
 def likelihood(s):
     global nodes, M
     SUM = 0
