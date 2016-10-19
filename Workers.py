@@ -1,68 +1,127 @@
 import numpy as np
 
+
 class UniformWorkers(object):
-
-    def __init__(self, numWorkers):
+    """
+    initialize the worker model in uniform distribution.
+        # model parameter:
+        #  accMatrix[i][j]: accuracy of j typed worker when bonus is i(0:no bonus, 1:bonus)
+        # input:
+        #  num_workers: total number workers
+    """
+    def __init__(self, num_workers):
         self.behaviour = 'Uniform'
-        self.accMatrix = [] # 2 * 2 accurate matrix, row: bonus, not bonus, column: type 0, type 1
-        self.accMatrix.append([0.5, 0.8]) #accuracy not  given bonus
-        self.accMatrix.append([0.9, 0.9]) #accuracy when given bonus
-        self.workersArray = np.random.choice(2, numWorkers)
+        self.accMatrix = []  # 2 * 2 accurate matrix, row: bonus, not bonus, column: type 0, type 1
+        self.accMatrix.append([0.5, 0.8])  # accuracy not  given bonus
+        self.accMatrix.append([0.9, 0.9])  # accuracy when given bonus
+        self.workerTypes = np.random.choice(2, num_workers)
 
-    def work(self, workerIDs, bonus):
-        bonus = map(lambda x: (x != 0), bonus) #convert value to bool
-        probs = [self.accMatrix[bonus[i]][workerIDs[i]] for i in range(len(workerIDs))]
-        return [np.random.choice(2, 1, p = [1- prob, prob]) for prob in probs]
-
+    """
+    assign a question to the workers in 'workerIDs'
+        # input:
+        #  workerIDs: a list of workers' id, they will work on the question
+        #  bonus: a list of bonus with same size as workerIDs, indicate the bonus given to the workers
+        # output:
+        #  0/1 list with same size as workerIDs, indicates their working result is correct(with 1) or not(with 0)
+    """
+    def work(self, worker_ids, bns):
+        bns = map(lambda x: (x != 0) * 1, bns)  # convert value to bool
+        probs = [self.accMatrix[bns[i]][self.workerTypes[worker_ids[i]]] for i in range(len(worker_ids))]
+        return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
 
 
 class BetaWorkers(object):
-
-    def __init__(self, numWorkers):
+    """
+    initialize the worker model in beta distribution.
+        # model parameter:
+        #  accMatrix[i]: probability that
+        # input:
+        #  numWorkers: total number workers
+    """
+    def __init__(self, num_workers):
         self.behaviour = 'Beta'
-        self.accMatrix = [] #accMatrix[0/1] is a function that generates probabilities of correct answer
-        self.accMatrix.append(lambda: np.Beta(2, 2)) #accuracy not  given bonus
-        self.accMatrix.append(lambda: np.Beta(6, 2)) #accuracy when given bonus
+        self.accMatrix = zip(np.random.beta(2, 2, num_workers), np.random.beta(6, 2, num_workers))
 
-    def work(self, workerIDs, bonus):
-        bonus = map(lambda x: (x != 0), bonus) #convert value to bool
-        probs = [self.accMatrix[bonus[i]]() for i in range(len(workerIDs))]
-        return [np.random.choice(2, 1, p=[1 - prob, prob]) for prob in probs]
-
+    """
+    assign a question to the workers in 'workerIDs'
+        # input:
+        #  workerIDs: a list of workers' id, they will work on the question
+        #  bonus: a list of bonus with same size as workerIDs, indicate the bonus given to the workers
+        # output:
+        #  0/1 list with same size as workerIDs, indicates their working result is correct(with 1) or not(with 0)
+    """
+    def work(self, worker_ids, bns):
+        bns = map(lambda x: (x != 0), bns)  # convert value to bool
+        probs = [self.accMatrix[idx][bns[idx]] for idx in worker_ids]
+        return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
 
 
 class IOHmmWorkers(object):
+    """
+    initialize the worker model in iohmm.
+        # model parameter:
+        #  transition[1/0]: bonus (or not) transition prbability matrix
+        #  r: reference payment level
+        #  alpha: skill level alpha
+        #  pAlph: the probability distribution of skill level in the population, add up tp 1
+        #  beta: responsiveness to to financial incentives
+        #  pBeta: the probability distribution of different financial incentives in the population, add up tp 1
+        # input:
+        #  numWorkers: total number workers
+    """
+    def __init__(self, num_workers):
+        self.behaviour = 'iohmm'
 
-    def initTransitMatx(self):
         self.transition = []
-        #transition matrix when given bonus
+        # transition matrix when given bonus
         self.transition.append([[0.8, 0.15, 0.05], [0.3, 0.6, 0.1], [0.2, 0.4, 0.4]])
-        #transition matrix not  given bonus
+        # transition matrix not  given bonus
         self.transition.append([[0.4, 0.4, 0.2], [0.1, 0.5, 0.4], [0.05, 0.1, 0.85]])
 
-    def __init__(self, numWorkers):
-        self.behaviour = 'iohmm'
-        self.initTransitMatx()
-        self.r = [0.2, 0.6, 1.2]
-        self.alph = [0, 1, 3]
-        self.pAlph = [0.2, 0.6, 0.2]
-        self.beta = [0, 1, 3]
-        self.pBeta = [0.2, 0.6, 0.2]
+        # user attributes:
+        self.r = [0.2, 0.6, 1.2]  # reference payment level
+        self.alph = [0, 1, 3]  # skill level alpha
+        self.p_alph = [0.2, 0.6, 0.2]  # the probability distribution of skill level in the population, add up tp 1
+        self.beta = [0, 1, 3]  # responsiveness to to financial incentives
+        self.p_beta = [0.2, 0.6, 0.2]  # the probability distribution of different financial incentives
 
-        npChoice = lambda x: np.random.choice(3, numWorkers, x)
-        self.situations = zip(npChoice(self.pAlph), npChoice(self.pBeta)) #save alpha and beta parameter of a worker
-        self.z = np.random.choice(3, numWorkers)
+        alphs = map(lambda ids: self.alph[ids], np.random.choice(len(self.p_alph), num_workers, p=self.p_alph))
+        betas = map(lambda ids: self.alph[ids], np.random.choice(len(self.p_beta), num_workers, p=self.p_beta))
+        self.situations = zip(alphs, betas)  # save alpha and beta parameter of a worker
+        self.z = np.random.choice(len(self.transition[0]), num_workers)
+        print self.z
 
-    def _updateState(self, workerIDs, bonus): #update hidden state for all workers
-        newZ = [self.z[x] for x in workerIDs]
-        map(lambda x: np.random.choice(3, 1, self.transition[bonus][x]), newZ)
-        for i in range(len(workerIDs)):
-            self.z[workerIDs[i]] = newZ[i]
+    """
+    update workers' hidden state in the next iteration
+        # input:
+        #  workerIDs: a list of workers' id, they will work on the question
+        #  bonus: a list of bonus with same size as workerIDs, indicate the bonus given to the workers
+    """
+    def _update_state(self, worker_ids, bns):  # update hidden state for all workers
+        self.z = [np.random.choice(len(self.transition[bns[i]]),  # number of hidden states
+                    1, p=self.transition[bns[i]][self.z[worker_ids[i]]])  # transition probability
+                    for i in range(len(worker_ids))]
 
-    def work(self, workerIDs, bonus):
+    """
+    assign a question to the workers in 'workerIDs'
+        # input:
+        #  workerIDs: a list of workers' id, they will work on the question
+        #  bonus: a list of bonus with same size as workerIDs, indicate the bonus given to the workers
+        # output:
+        #  0/1 list with same size as workerIDs, indicates their working result is correct(with 1) or not(with 0)
+    """
+    def work(self, worker_ids, bns):
         # emission probabilitie: 1 / (1 + e ^ (-alphi - betai(at - rzt))  "bonus or not 4.2"
-        probs = [1 / (1 + np.exp(-self.alph[self.situations[i][0]] -\
-            self.beta[self.situations[i][1]](bonus[i] - self.r[self.z[i]])))\
-            for i in range(workerIDs)]
-        self._updateState(bonus) #update hidden state
-        return [np.random.choice(2, 1, p=[1 - prob, prob]) for prob in probs]
+        probs = [1 / (1 + np.exp(-self.situations[idx][0] -
+                 self.situations[idx][1] * (bns[idx] - self.r[self.z[idx]]))) for idx in worker_ids]
+
+        self._update_state(worker_ids, bns)  # update hidden state
+        return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
+
+
+if __name__ == '__main__':
+    numWorkers = 5
+    workerIDs = range(numWorkers)
+    bonus = [1, 1, 1, 1, 1]
+    workers = IOHmmWorkers(numWorkers)
+    print workers.work(workerIDs, bonus)
