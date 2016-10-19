@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1b42d408-846e-4491-bf05-d54664716bc2" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/Workers.py" afterPath="$PROJECT_DIR$/Workers.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/main.py" afterPath="$PROJECT_DIR$/main.py" />
     </list>
     <ignored path="topkIOHMM.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -26,8 +25,8 @@
       <file leaf-file-name="ApollingEngine.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ApollingEngine.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="120">
-              <caret line="9" column="45" selection-start-line="9" selection-start-column="45" selection-end-line="9" selection-end-column="45" />
+            <state relative-caret-position="135">
+              <caret line="9" column="20" selection-start-line="9" selection-start-column="20" selection-end-line="9" selection-end-column="20" />
               <folding>
                 <element signature="e#0#31#0" expanded="true" />
               </folding>
@@ -35,12 +34,41 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="ApollingSelect.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/ApollingSelect.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="293">
+              <caret line="207" column="65" selection-start-line="207" selection-start-column="55" selection-end-line="207" selection-end-column="65" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="main.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/main.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="255">
-              <caret line="63" column="22" selection-start-line="63" selection-start-column="22" selection-end-line="63" selection-end-column="22" />
-              <folding />
+            <state relative-caret-position="825">
+              <caret line="103" column="51" selection-start-line="103" selection-start-column="51" selection-end-line="103" selection-end-column="51" />
+              <folding>
+                <element signature="e#741#825#0" expanded="false" />
+                <element signature="e#921#1062#0" expanded="false" />
+                <element signature="e#1131#1162#0" expanded="false" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="Workers.py" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/Workers.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="30">
+              <caret line="2" column="0" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="0" />
+              <folding>
+                <element signature="e#55#1411#0" expanded="false" />
+                <element signature="e#1445#2501#0" expanded="false" />
+                <element signature="e#2536#5764#0" expanded="false" />
+                <element signature="e#5798#5954#0" expanded="false" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -66,8 +94,8 @@
         <option value="$PROJECT_DIR$/PairSelection.py" />
         <option value="$PROJECT_DIR$/ApollingEngine.py" />
         <option value="$PROJECT_DIR$/CrowdSoucingEngine.py" />
-        <option value="$PROJECT_DIR$/main.py" />
         <option value="$PROJECT_DIR$/Workers.py" />
+        <option value="$PROJECT_DIR$/main.py" />
       </list>
     </option>
   </component>
@@ -350,7 +378,7 @@
           <option name="timeStamp" value="8" />
         </line-breakpoint>
       </breakpoints>
-      <option name="time" value="9" />
+      <option name="time" value="15" />
     </breakpoint-manager>
     <watches-manager />
   </component>
@@ -369,7 +397,11 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#741#825#0" expanded="false" />
+            <element signature="e#921#1062#0" expanded="false" />
+            <element signature="e#1131#1162#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -384,6 +416,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3465">
           <caret line="231" column="4" selection-start-line="231" selection-start-column="4" selection-end-line="231" selection-end-column="4" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -404,6 +437,8 @@
           <folding>
             <element signature="e#55#1411#0" expanded="false" />
             <element signature="e#1445#2501#0" expanded="false" />
+            <element signature="e#2536#5764#0" expanded="false" />
+            <element signature="e#5798#5954#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -412,7 +447,11 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="900">
           <caret line="62" column="12" selection-start-line="62" selection-start-column="12" selection-end-line="62" selection-end-column="12" />
-          <folding />
+          <folding>
+            <element signature="e#741#825#0" expanded="false" />
+            <element signature="e#921#1062#0" expanded="false" />
+            <element signature="e#1131#1162#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -427,6 +466,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3465">
           <caret line="231" column="4" selection-start-line="231" selection-start-column="4" selection-end-line="231" selection-end-column="4" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -447,6 +487,8 @@
           <folding>
             <element signature="e#55#1411#0" expanded="false" />
             <element signature="e#1445#2501#0" expanded="false" />
+            <element signature="e#2536#5764#0" expanded="false" />
+            <element signature="e#5798#5954#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -462,6 +504,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="3465">
           <caret line="231" column="4" selection-start-line="231" selection-start-column="4" selection-end-line="231" selection-end-column="4" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -479,7 +522,11 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
+          <folding>
+            <element signature="e#741#825#0" expanded="false" />
+            <element signature="e#921#1062#0" expanded="false" />
+            <element signature="e#1131#1162#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -487,6 +534,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -494,7 +542,11 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="90">
           <caret line="6" column="30" selection-start-line="6" selection-start-column="30" selection-end-line="6" selection-end-column="30" />
-          <folding />
+          <folding>
+            <element signature="e#741#825#0" expanded="false" />
+            <element signature="e#921#1062#0" expanded="false" />
+            <element signature="e#1131#1162#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -509,6 +561,7 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
@@ -516,7 +569,11 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="90">
           <caret line="6" column="30" selection-start-line="6" selection-start-column="30" selection-end-line="6" selection-end-column="30" />
-          <folding />
+          <folding>
+            <element signature="e#741#825#0" expanded="false" />
+            <element signature="e#921#1062#0" expanded="false" />
+            <element signature="e#1131#1162#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
@@ -535,24 +592,6 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/CrowdSoucingEngine.py" />
-    <entry file="file://$PROJECT_DIR$/Workers.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="90">
-          <caret line="55" column="120" selection-start-line="55" selection-start-column="120" selection-end-line="55" selection-end-column="120" />
-          <folding>
-            <element signature="e#55#1411#0" expanded="false" />
-            <element signature="e#1445#2501#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/ApollingSelect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="14" column="35" selection-start-line="14" selection-start-column="35" selection-end-line="14" selection-end-column="35" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/ApollingInference.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="506">
@@ -560,21 +599,46 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/Workers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="30">
+          <caret line="2" column="0" selection-start-line="2" selection-start-column="0" selection-end-line="2" selection-end-column="0" />
+          <folding>
+            <element signature="e#55#1411#0" expanded="false" />
+            <element signature="e#1445#2501#0" expanded="false" />
+            <element signature="e#2536#5764#0" expanded="false" />
+            <element signature="e#5798#5954#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/ApollingEngine.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="9" column="45" selection-start-line="9" selection-start-column="45" selection-end-line="9" selection-end-column="45" />
+        <state relative-caret-position="135">
+          <caret line="9" column="20" selection-start-line="9" selection-start-column="20" selection-end-line="9" selection-end-column="20" />
           <folding>
             <element signature="e#0#31#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/ApollingSelect.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="293">
+          <caret line="207" column="65" selection-start-line="207" selection-start-column="55" selection-end-line="207" selection-end-column="65" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/main.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="255">
-          <caret line="63" column="22" selection-start-line="63" selection-start-column="22" selection-end-line="63" selection-end-column="22" />
-          <folding />
+        <state relative-caret-position="825">
+          <caret line="103" column="51" selection-start-line="103" selection-start-column="51" selection-end-line="103" selection-end-column="51" />
+          <folding>
+            <element signature="e#741#825#0" expanded="false" />
+            <element signature="e#921#1062#0" expanded="false" />
+            <element signature="e#1131#1162#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>

@@ -98,4 +98,7 @@ def topK(budget, allNodes, usedEdges, allEdges, answerMatrix, obsMatrix):
 
     return crwSrcEngine.resultInference(allNodes, allEdges, answerMatrix)
         
-
+if __name__ == '__main__':
+    num_nd = 10
+    used_edges = []
+    all_edges = [(i, j) for i in range(num_nd) for ]
