@@ -2,7 +2,7 @@
 % Author: Ashesh Jain
 % Email: ashesh@cs.cornell.edu
 
-function [model, result] = IOhmmFit( data, inputObs, model, numiter)
+function model = IOhmmFit(data, inputObs, model, numiter)
 % Input descriptions:
 % model
 %	type: 'discrete' or 'gauss'. Use 'discrete' for discrete observations and 'gauss' for continuous observations
@@ -64,12 +64,15 @@ function [model, result] = IOhmmFit( data, inputObs, model, numiter)
     A1 = transitionMatrix(model.W, inputObs1, model);
     A0 = A0 * model.B;
     A1 = A1 * model.B;
-    result = cell(1, size(inputObs, 2));
-    for i=1:size(inputObs, 2)   
-        result{i} = cell(1, 2);
-        result{i}{1} = alph{i}(:,1)' * A0;
-        result{i}{2} = alph{i}(:,1)' * A1;
+    disp(model.B)
+    model.result = cell(1, size(inputObs, 2));
+    for i=1:size(inputObs, 2)
+        %disp(alph{i})
+        model.result{i} = cell(1, 2);
+        model.result{i}{1} = alph{i}(:,1)' * A0;
+        model.result{i}{2} = alph{i}(:,1)' * A1;
     end;
+
     %figure, plot(ll);
     %disp(sum(cell2mat(loglikelihood)));
     %[~,loglikelihood,~] = ForwardPass(truemodel, calculateEvidence(truemodel, data));
@@ -77,7 +80,7 @@ function [model, result] = IOhmmFit( data, inputObs, model, numiter)
 end
 
 function model = mstep(gam,xi,expected,model,inputObs,data_original)
-    addpath ../minFunc;
+    addpath minFunc;
     N = size(gam,2);
   
     data.inputObs = inputObs;

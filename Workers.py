@@ -1,6 +1,8 @@
 import numpy as np
 
 
+
+
 class UniformWorkers(object):
     """
     initialize the worker model in uniform distribution.
@@ -10,7 +12,7 @@ class UniformWorkers(object):
         #  num_workers: total number workers
     """
     def __init__(self, num_workers):
-        self.behaviour = 'Uniform'
+        self.behaviour = 'uniform'
         self.accMatrix = []  # 2 * 2 accurate matrix, row: bonus, not bonus, column: type 0, type 1
         self.accMatrix.append([0.5, 0.8])  # accuracy not  given bonus
         self.accMatrix.append([0.9, 0.9])  # accuracy when given bonus
@@ -39,7 +41,7 @@ class BetaWorkers(object):
         #  numWorkers: total number workers
     """
     def __init__(self, num_workers):
-        self.behaviour = 'Beta'
+        self.behaviour = 'beta'
         self.accMatrix = zip(np.random.beta(2, 2, num_workers), np.random.beta(6, 2, num_workers))
 
     """
@@ -89,7 +91,6 @@ class IOHmmWorkers(object):
         betas = map(lambda ids: self.alph[ids], np.random.choice(len(self.p_beta), num_workers, p=self.p_beta))
         self.situations = zip(alphs, betas)  # save alpha and beta parameter of a worker
         self.z = np.random.choice(len(self.transition[0]), num_workers)
-        print self.z
 
     """
     update workers' hidden state in the next iteration
@@ -119,9 +120,29 @@ class IOHmmWorkers(object):
         return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
 
 
+class SimulationWorkers(object):
+    def __init__(self, num_workers, simtype):
+        if simtype == 'uniform':
+            self.workers = UniformWorkers(num_workers)
+        elif simtype == 'beta':
+            self.workers = BetaWorkers(num_workers)
+        elif simtype == 'iohmm':
+            self.workers = IOHmmWorkers(num_workers)
+        else:
+            print 'no such type of workers'
+            raise Exception
+
+    def publish_questions(self, worker_ids, cmp_pair, salaries):
+        self.cmp_pair = cmp_pair
+        self.qualities = self.workers.work(worker_ids, salaries)
+
+    def collect_answers(self):
+        return [int(quality == int(self.cmp_pair[0] < self.cmp_pair[1])) for quality in self.qualities]
+
+
 if __name__ == '__main__':
     numWorkers = 5
-    workerIDs = range(numWorkers)
-    bonus = [1, 1, 1, 1, 1]
+    workerIDs = range(0, 3, 1)
+    salaries = [1, 0, 0]
     workers = IOHmmWorkers(numWorkers)
-    print workers.work(workerIDs, bonus)
+    print workers.work(workerIDs, salaries)

@@ -1,6 +1,7 @@
 from matlab import engine
 from ApollingEngine import *
-import time
+from Workers import SimulationWorkers
+import numpy as py
 
 
 weights = [0, 1, 23]  #utility weight of different performance and cost, bad: 0, good: 1,  the last bit is the weight of the cost
@@ -14,26 +15,21 @@ matlabEngine = engine.start_matlab()
 
 def expectUtility(workerID, prfrmncMatrix, cost, bonus, isBonus, weights):
     utility = 0
-    for i in range(len(prfrmncMatrix[workerID][isBonus])):
-        prob = prfrmncMatrix[workerID][isBonus][i]
-        utility += prob * weights[i]
+    if len(prfrmncMatrix[workerID][isBonus]) == 0:
+        return py.random.random()
+    else:
+        for i in range(len(prfrmncMatrix[workerID][isBonus][0])):  #traverse all the different quality
+            prob = prfrmncMatrix[workerID][isBonus][0][i]
+            utility += prob * weights[i]
     utility -= negUtility(cost, bonus, isBonus, weights)
     return utility
 
 def negUtility(cost, bonus, isBonus, weights):  #calculate the negative effect that the cost will bring to the requester's utility
-    utility = 0
-    utility -= (cost + isBonus * bonus) * weights[-1]
-    return utility
+    return (cost + isBonus * bonus) * weights[-1]
 
-def publishQuestions(workerID, cmpPair, salary):  #implement this function with MTurk api
-    print "we allocate the %dth  worker (%d, %d) compare pair " \
-          "question with %lf cents" %(workerID, cmpPair[0], cmpPair[1], salary)
 
-def collectAnswers():  #implement this function with MTurk api
-    answers = []
-    return answers
 
-def update(cmpPair, answers, input, answerMatrix, obsMatrix, usedEdges):
+def update(cmpPair, answers, spend, answerMatrix, obsMatrix, usedEdges):
 
 #get the vote result and adjust the cmpPair(no need to return this stuff)
     cmpCnt = [0 for x in range(2)]
@@ -51,8 +47,8 @@ def update(cmpPair, answers, input, answerMatrix, obsMatrix, usedEdges):
         answerMatrix[cmpPair] = 1
 
 # update obsMatrix with answers
-    for i in range(len(obsMatrix)):
-        obsMatrix[i].append((int(answers[i] == majority), input))
+    for i in obsMatrix:
+        obsMatrix[i].append((int(answers[i] == majority), spend[i]))
 
 # update usedEdges with answers
     usedEdges.append(cmpPair)
@@ -60,36 +56,31 @@ def update(cmpPair, answers, input, answerMatrix, obsMatrix, usedEdges):
 
 
 
-def topK(budget, allNodes, usedEdges, allEdges, answerMatrix, obsMatrix):
-    prfrmncMatrix = []
+def topK(budget, allNodes, usedEdges, allEdges, answerMatrix, obsMatrix, num_workers):
+    workers = SimulationWorkers(num_workers, "uniform")
+    prfrmncMatrix = [[[], []] for i in range(num_workers)]
     cost = 5#5 cent will be given to the worker if the task is finished
     bonus = 2#2 cent will be given to the worker if we want to reward the worker
     nstates = 3
-    ostates = 3
+    ostates = 2
     numiter = 1000
 
     while(budget > 0):
-        cmpPair = crwSrcEngine.pairSelection(allNodes, usedEdges, allEdges, answerMatrix)
+        cmpPair = crwSrcEngine.pairSelection(allNodes, usedEdges, allEdges, answerMatrix)[0]
+        spend = []
         for workerID in obsMatrix:
-            expUtlT = expectUtility(workerID, prfrmncMatrix, cost, bonus, True, weights) #expect utility if given certain bonus
-            expUtlF = expectUtility(workerID, prfrmncMatrix, cost, bonus, False, weights)#expect utility if not given certain bonus
-            spend = cost + (expUtlT > expUtlF) * bonus
-            budget -= spend
+            expUtlT = expectUtility(workerID, prfrmncMatrix, cost, bonus, 1, weights) #expect utility if given certain bonus
+            expUtlF = expectUtility(workerID, prfrmncMatrix, cost, bonus, 0, weights)#expect utility if not given certain bonus
+            spend.append(cost + (expUtlT > expUtlF) * bonus)
+            budget -= spend[-1]  # the last spend value
         if budget >= 0:
-            for workerID in obsMatrix:
-                publishQuestions(workerID, cmpPair, spend)
-
-                # replace here with stop_event.is_set(), just wait until all the worker finish their tasks
-                time.sleep(5)
-
-                answers = collectAnswers()
-
-                update(cmpPair, answers, input, answerMatrix, obsMatrix, usedEdges)
-
-                oObs = [ioPairs[0] for sequence in obsMatrix for ioPairs in sequence] # output observations of every sequences
-                iObs = [ioPairs[0] for sequence in obsMatrix for ioPairs in sequence] # input observations of every sequences
-                iohmmModel, prfrmncMatrix = matlabEngine.iohmmTraining(oObs, iObs, nstates, ostates, numiter)
-
+            workers.publish_questions(obsMatrix.keys(), cmpPair, spend)
+            answers = workers.collect_answers()
+            update(cmpPair, answers, spend, answerMatrix, obsMatrix, usedEdges)
+            iObsVec = [[0, 1], [1, 0]]
+            oObs = [[ioPairs[0] for ioPairs in obsMatrix[seqid]] for seqid in obsMatrix ]  # output observations of every sequences
+            iObs = [[iObsVec[int(ioPairs[1] > cost)] for ioPairs in obsMatrix[seqid]] for seqid in obsMatrix]   # input observations of every sequences
+            prfrmncMatrix = matlabEngine.iohmmTraining(oObs, iObs, nstates, ostates, numiter)['result']
         else:
             print 'budget not enough!\n'
             break
@@ -100,5 +91,11 @@ def topK(budget, allNodes, usedEdges, allEdges, answerMatrix, obsMatrix):
         
 if __name__ == '__main__':
     num_nd = 10
+    num_workers = 200
     used_edges = []
-    all_edges = [(i, j) for i in range(num_nd) for ]
+    all_nodes = [i for i in range(num_nd)]
+    all_edges = [(i, j) for i in range(num_nd) for j in range(num_nd)]
+    answer_matrix = {}
+    obs_matrix = dict(zip([i for i in range(num_workers)], [[] for i in range(num_workers)]))
+    topK(1000000, all_nodes, used_edges, all_edges, answer_matrix, obs_matrix, num_workers)
+

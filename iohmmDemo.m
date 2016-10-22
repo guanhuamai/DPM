@@ -1,31 +1,30 @@
+
 function model = iohmmDemo( )
     clc
     model.type = 'discrete';
     
     %% Demo for discrete case
     if strcmp(model.type,'discrete')
-        model.nstates = 4; 
-        model.ostates = 6;
-        model.inputDimension = 1;
-        model.B =[1/6  1/6   1/6   1/6   1/6   1/6  ;  
-                 1/10  1/10  1/10  1/10  1/10  5/10 ; 
-                 2/6   1/6   1/6   1/6    1/12  1/12 ;
-                 7/12   1/12  1/12  1/12  1/12 1/12];  
+        model.nstates = 3; 
+        model.ostates = 2;
+        model.inputDimension = 2;
+        model.B =[1/6  5/6;
+                 3/6   3/6;
+                 3/7   4/7];
 
-        model.A = [0.6 0.15 0.20 0.05;
-                  0.10 0.70 0.15 0.05;
-                  0.10 0.30 0.10 0.50;
-                  0.30 0.10 0.30 0.30];
-
-        model.pi = [0.8 0.1 0.1 0]';
+        model.W = [[0.5,0.5], [0.5,0.5];
+                  [0.4,0.7], [0.6,0.4];
+                  [0.1,0.9], [0.1,0.9]];
+        model.piW = [[0.4; 0.6], [0.2; 0.8]]';
         model.type = 'discrete';
         T = 10;
         N = 100;
-        [observations,hidden_states] = hmmSample(model,T,N);
-        trueModel = model;
-        model = initializeHMMmodel(model.type,model.nstates,model.ostates);
-        iohmmFit(trueModel,observations,model,300);
         
+        [observations,hidden_states,inputObs] = hmmSample(model,T,N);
+        model = initializeHMMmodel(model.type,model.nstates,model.ostates,model.inputDimension);
+        [model, alph] = IOhmmFit(observations,inputObs,model,300);
+        disp(alph)
+        disp(model.B)
     elseif strcmp(model.type,'gauss')
         model.nstates = 4; 
         model.observationDimension = 10;
@@ -39,7 +38,7 @@ function model = iohmmDemo( )
         end;
         model.pi = [0.8 0.1 0.1 0]';
         T = 10;
-        N = 100;
+        N = 10;
         [observations,hidden_states] = hmmSample(model,T,N);
         model = initializeHMMmodel(model.type,model.nstates,model.observationDimension);
         

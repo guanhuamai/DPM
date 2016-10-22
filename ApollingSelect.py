@@ -146,7 +146,11 @@ def gau_kl(curr_s, curr_matrix, past_s, past_matrix):
     if np.linalg.det(curr_matrix) != 0:
         factor2_2 = np.linalg.inv(curr_matrix)
     else:
-        factor2_2 = record_current_matrix[-1]
+        try:
+            factor2_2 = record_current_matrix[-1]
+        except IndexError:
+            print 'IndexError'
+            pass
 
     factor2_3 = curr_s - past_s
     factor2_4 = np.dot(factor2_1, factor2_2)
@@ -205,7 +209,7 @@ def max_entropy():
 
         M[edge] = BaseMatrix[edge]
 
-        s_new, cov_matrix_new = computation_cov_matrix(test_edges)
+        s_new, cov_matrix_new = computation_cov_matrix(test_edges )
 
         M[edge] = 0.08
         test_edges.remove(edge)
@@ -233,7 +237,8 @@ def apollingSelect(allNodes, usedEdges, allEdges, matrix):
     'Preparation'
     global selected_edges, nodes, edges, M, BaseMatrix, last_score, Hessian, record_inv_matrix, record_current_matrix
     global left_edges
-    nodes, edges, BaseMatrix = allNodes, allEdges, matrix
+    nodes, edges = allNodes, allEdges
+    BaseMatrix = copy.deepcopy(matrix)
     selected_edges = usedEdges
     last_score = {}
     Hessian = {}
