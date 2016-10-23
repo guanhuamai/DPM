@@ -37,18 +37,21 @@ def update(cmpPair, answers, spend, answerMatrix, obsMatrix, usedEdges):
         cmpCnt[answer] += 1
     majority = 0
     if(cmpCnt[1] > cmpCnt[0]): majority = 1
-    if majority != 1:
-        cmpPair = (cmpPair[1], cmpPair[0])
 
-#update answerMatrix with answers
-    try:
-        answerMatrix[cmpPair] += 1
-    except KeyError:
-        answerMatrix[cmpPair] = 1
 
 # update obsMatrix with answers
     for i in obsMatrix:
         obsMatrix[i].append((int(answers[i] == majority), spend[i]))
+
+#update answerMatrix with answers
+    for ans in answers:
+        tmpPair = cmpPair
+        if ans == 0:
+            tmpPair = (cmpPair[1], cmpPair[0])
+        try:
+            answerMatrix[tmpPair] += 1
+        except KeyError:
+            answerMatrix[tmpPair] = 1
 
 # update usedEdges with answers
     usedEdges.append(cmpPair)
