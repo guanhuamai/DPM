@@ -69,7 +69,7 @@ def topK(budget, allNodes, usedEdges, allEdges, answerMatrix, obsMatrix, num_wor
     numiter = 1000
 
     while(budget > 0):
-        cmpPair = crwSrcEngine.pairSelection(allNodes, usedEdges, allEdges, answerMatrix)[0]
+        cmpPair = crwSrcEngine.pairSelection(allNodes, usedEdges, allEdges, answerMatrix)
         spend = []
         for workerID in obsMatrix:
             expUtlT = expectUtility(workerID, prfrmncMatrix, cost, bonus, 1, weights) #expect utility if given certain bonus
@@ -77,6 +77,7 @@ def topK(budget, allNodes, usedEdges, allEdges, answerMatrix, obsMatrix, num_wor
             spend.append(cost + (expUtlT > expUtlF) * bonus)
             budget -= spend[-1]  # the last spend value
         if budget >= 0:
+            print 'budget left', budget
             workers.publish_questions(obsMatrix.keys(), cmpPair, spend)
             answers = workers.collect_answers()
             update(cmpPair, answers, spend, answerMatrix, obsMatrix, usedEdges)

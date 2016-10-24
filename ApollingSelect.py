@@ -47,7 +47,7 @@ def crowdgauss_estimation(test_edges):
     for item in xrange(len(nodes)):
         #         x0.append(random.random())
         x0.append(1.0)
-    res = optimize.minimize(likelihood, x0, method='L-BFGS-B', options={"maxiter": 20})
+    res = optimize.minimize(likelihood, x0, method='L-BFGS-B', options={"maxiter": 100})
     score = {}
     for i in xrange(len(nodes)):
         score[nodes[i]] = res.x[i]
@@ -111,7 +111,10 @@ def computation_cov_matrix(test_edges):
             length = len(record_inv_matrix)
             record_inv_matrix = record_inv_matrix[length - 100:]
     else:
-        inv_matrix = record_inv_matrix[-1]
+        try:
+            inv_matrix = record_inv_matrix[-1]
+        except IndexError:
+            print 'index error in record_inv_matrix[-1]'
 
     'For verification'
     '''
@@ -149,8 +152,7 @@ def gau_kl(curr_s, curr_matrix, past_s, past_matrix):
         try:
             factor2_2 = record_current_matrix[-1]
         except IndexError:
-            print 'IndexError'
-            pass
+            print 'index error in record_inv_matrix[-1]'
 
     factor2_3 = curr_s - past_s
     factor2_4 = np.dot(factor2_1, factor2_2)
@@ -209,7 +211,7 @@ def max_entropy():
 
         M[edge] = BaseMatrix[edge]
 
-        s_new, cov_matrix_new = computation_cov_matrix(test_edges )
+        s_new, cov_matrix_new = computation_cov_matrix(test_edges)
 
         M[edge] = 0.08
         test_edges.remove(edge)
@@ -226,28 +228,37 @@ def max_entropy():
         entropy[edge] = expected_entropy
 
     try:
-        result = heapq.nlargest(1, entropy, key=entropy.get)
-    except Exception, e:
-        result = random.sample(edges, 1)
+        result = heapq.nlargest(10, entropy, key=entropy.get)
 
+    except Exception, e:
+        print 'failure selected'
+        result = random.sample(edges, 10)
+
+    cnt = 0
+    for e in result:
+        print e, entropy[e]
+        cnt += 1
+        if cnt == 9:
+            break
     return result
 
 
-def apollingSelect(allNodes, usedEdges, allEdges, matrix):
+def apollingSelect(allNodes, ansEdges, allEdges, ansMatrix):
     'Preparation'
     global selected_edges, nodes, edges, M, BaseMatrix, last_score, Hessian, record_inv_matrix, record_current_matrix
     global left_edges
-    nodes, edges = allNodes, allEdges
-    BaseMatrix = copy.deepcopy(matrix)
-    selected_edges = usedEdges
     last_score = {}
     Hessian = {}
     record_inv_matrix = []
     record_current_matrix = []
+    nodes, edges = allNodes, allEdges
+    BaseMatrix = copy.deepcopy(ansMatrix)
 
     for nodeA in nodes:
         for nodeB in nodes:
-            if (nodeA, nodeB) not in BaseMatrix:
+            if nodeA == nodeB:
+                BaseMatrix[(nodeA, nodeB)] = 0
+            elif (nodeA, nodeB) not in BaseMatrix or BaseMatrix[(nodeA, nodeB)] == 0:
                 BaseMatrix[(nodeA, nodeB)] = 0.08
 
     M = copy.deepcopy(BaseMatrix)
@@ -258,12 +269,51 @@ def apollingSelect(allNodes, usedEdges, allEdges, matrix):
         for nodeB in nodes:
             Hessian[(nodeA, nodeB)] = 0
 
-    pre_process(selected_edges)
+    selected_edges = ansEdges
 
-    left_edges = list(set(edges) - set(selected_edges))
+    left_edges = []
 
-    return max_entropy()
+    edges_in_this_round = max_entropy()
+
+    for edge in edges_in_this_round:
+        if edge[0] != edge[1]:
+            print 'success selected', edge
+            return edge
+
+    for e in edges_in_this_round:
+        print BaseMatrix[e]
+
+    return edges_in_this_round[0]
 
 
+'''
+    for percent in np.arange(prepare_percentage, 1.1, 0.1):
+
+        print percent
+
+        selected_edges = random.sample(edges, int(len(edges) * 0.1))
+
+        pre_process(selected_edges)
+
+        number_of_edges_round = int(len(edges) * (percent - 0.1))
 
 
+        for xiter in range(0, number_of_edges_round, 10):
+            pre_process(selected_edges)
+
+            edges_in_this_round = max_entropy()
+
+            selected_edges.extend(edges_in_this_round)
+            print 'selected edge', selected_edges
+
+
+if __name__ == '__main__':
+    allNodes, ansEdges, ansMatrix = mall_process.mall_process()
+    allEdges = [(nodeA, nodeB) for nodeA in allNodes for nodeB in allNodes]
+    select = apollingSelect(allNodes, allEdges, ansEdges, ansMatrix)
+    for i in select:
+        if(i in ansEdges):
+            print i, ansMatrix[i]
+        else:
+            print 'not in ansEdges! Great!'
+'''
