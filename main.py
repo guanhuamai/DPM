@@ -69,7 +69,7 @@ def topK(budget, allNodes, usedEdges, allEdges, answerMatrix, obsMatrix, num_wor
     numiter = 1000
 
     while(budget > 0):
-        cmpPair = crwSrcEngine.pairSelection(allNodes, usedEdges, allEdges, answerMatrix)
+        cmpPair = crwSrcEngine.pairSelection(num_workers, allNodes, usedEdges, allEdges, answerMatrix)
         spend = []
         for workerID in obsMatrix:
             expUtlT = expectUtility(workerID, prfrmncMatrix, cost, bonus, 1, weights) #expect utility if given certain bonus
@@ -90,7 +90,6 @@ def topK(budget, allNodes, usedEdges, allEdges, answerMatrix, obsMatrix, num_wor
             break
 
 
-
     return crwSrcEngine.resultInference(allNodes, allEdges, answerMatrix)
         
 if __name__ == '__main__':
@@ -101,5 +100,5 @@ if __name__ == '__main__':
     all_edges = [(i, j) for i in range(num_nd) for j in range(num_nd)]
     answer_matrix = {}
     obs_matrix = dict(zip([i for i in range(num_workers)], [[] for i in range(num_workers)]))
-    topK(1000000, all_nodes, used_edges, all_edges, answer_matrix, obs_matrix, num_workers)
+    topK(10000, all_nodes, used_edges, all_edges, answer_matrix, obs_matrix, num_workers)
 

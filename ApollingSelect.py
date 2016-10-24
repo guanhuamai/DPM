@@ -12,6 +12,8 @@ global nodes, edges, M, BaseMatrix
 global left_edges, selected_edges, last_score, Hessian, record_inv_matrix, record_current_matrix
 global crowdgauss_estimation_edges
 
+global num_workers
+
 normal_pdf = lambda x: 1.0 / math.pow(2 * math.pi, 0.5) * math.exp(-1 * x * x / 2.0)
 normal_cdf = lambda x: 0.5 * (1 + math.erf(x / 1.414))
 
@@ -171,7 +173,7 @@ def gau_kl(curr_s, curr_matrix, past_s, past_matrix):
 
 def max_entropy():
     'Prepare for the computation'
-    global selected_edges, edges, last_score, left_edges
+    global selected_edges, edges, last_score, left_edges, num_workers
     entropy = {}
     for edge in edges:
         entropy[edge] = 0
@@ -209,18 +211,24 @@ def max_entropy():
         test_edges = copy.deepcopy(selected_edges)
         test_edges.append(edge)
 
+        if BaseMatrix[edge] < 1:
+            M[edge] =  num_workers # try new edge
+        else:
+            M[edge] = BaseMatrix[edge] + num_workers
+        s_new, cov_matrix_new = computation_cov_matrix(test_edges)
         M[edge] = BaseMatrix[edge]
 
-        s_new, cov_matrix_new = computation_cov_matrix(test_edges)
-
-        M[edge] = 0.08
         test_edges.remove(edge)
         test_edges.append((edge[1], edge[0]))
-        M[(edge[1], edge[0])] = BaseMatrix[(edge[1], edge[0])]
+
+        if BaseMatrix[edge] < 1:
+            M[edge] = num_workers  # try new edge
+        else:
+            M[edge] = BaseMatrix[edge] + num_workers # try new edge
 
         s_new2, cov_matrix_new2 = computation_cov_matrix(test_edges)
 
-        M[(edge[1], edge[0])] = 0.08
+        M[(edge[1], edge[0])] = BaseMatrix[edge]
 
         expected_entropy = pro_ij * gau_kl(current_s, current_matrix, s_new, cov_matrix_new) + \
                            pro_ji * gau_kl(current_s, current_matrix, s_new2, cov_matrix_new2)
@@ -243,15 +251,16 @@ def max_entropy():
     return result
 
 
-def apollingSelect(allNodes, ansEdges, allEdges, ansMatrix):
+def apollingSelect(numWorkers, allNodes, ansEdges, allEdges, ansMatrix):
     'Preparation'
     global selected_edges, nodes, edges, M, BaseMatrix, last_score, Hessian, record_inv_matrix, record_current_matrix
-    global left_edges
+    global left_edges, num_workers
     last_score = {}
     Hessian = {}
     record_inv_matrix = []
     record_current_matrix = []
     nodes, edges = allNodes, allEdges
+    num_workers = numWorkers
     BaseMatrix = copy.deepcopy(ansMatrix)
 
     for nodeA in nodes:

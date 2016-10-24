@@ -6,14 +6,14 @@ class ApollingEngine(object):
     def __init__(self):
         print 'init an apolling engine'
 
-    def pairSelection(self, allNodes, usedEdges, allEdges, matrix):
+    def pairSelection(self, numWorkers, allNodes, usedEdges, allEdges, matrix):
         try:
-            return apollingSelect(allNodes, usedEdges, allEdges, matrix)
+            return apollingSelect(numWorkers, allNodes, usedEdges, allEdges, matrix)
         except:
-            print 'failure selected'
             while True:
-                edge = np.random.sample(allEdges)
+                edge = allEdges[np.random.choice(len(allEdges), 1)[0]]
                 if edge not in usedEdges:
+                    print 'failure selected', edge
                     return edge
 
 

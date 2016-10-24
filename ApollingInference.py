@@ -38,7 +38,15 @@ def inference():
 
 def apollingInference(allNodes, allEdges, matrix):
     global nodes, edges, M
-    nodes, edges, M = allNodes, allEdges, matrix
+    nodes, tmpedges, M = allNodes, allEdges, matrix
+    edges = []
+    for edge in tmpedges:
+        try:
+            if M[edge] > M[(edge[1], edge[0])]:
+                edges.append(edge)
+        except KeyError:
+            M[edge] = 0
+
     inference()
 
 
