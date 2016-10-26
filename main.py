@@ -4,7 +4,7 @@ from Apolling import Apolling
 
 def get_majority(answers):
     cnt1 = sum(answers)
-    return int(cnt1 >= (answers / 2))
+    return int(cnt1 >= (len(answers) / 2))
 
 
 def top_k(budget, bonus_allocator, decision_maker, workers):
@@ -29,6 +29,7 @@ if __name__ == '__main__':
     num_workers = 200
 
     bns_allocator = IOHMMBaseline(num_workers)
+    bns_allocator.set_parameters(numitr=200)
     dec_maker = Apolling(num_workers, num_nd)
     simworkers = SimulationWorkers(num_workers, "uniform")
 
