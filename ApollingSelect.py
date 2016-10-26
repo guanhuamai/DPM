@@ -235,9 +235,6 @@ def max_entropy():
         entropy[edge] = expected_entropy
 
     rslt = sorted(entropy, key=entropy.get, reverse=True)
-    for i in rslt:
-        print i, entropy[i]
-
     return rslt
 '''
     try:
@@ -294,43 +291,10 @@ def apolling_select(pnum_workers, all_nodes, ans_edges, all_edges, ans_matrix):
             if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
                 print 'success selected', edge
                 return edge
-    except IndexError:
+    except Exception:
         while True:
             edge = all_edges[np.random.choice(len(all_edges), 1)[0]]
             if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
                 print 'failure selected', edge
                 return edge
     return -1, -1
-
-
-'''
-    for percent in np.arange(prepare_percentage, 1.1, 0.1):
-
-        print percent
-
-        selected_edges = random.sample(edges, int(len(edges) * 0.1))
-
-        pre_process(selected_edges)
-
-        number_of_edges_round = int(len(edges) * (percent - 0.1))
-
-
-        for xiter in range(0, number_of_edges_round, 10):
-            pre_process(selected_edges)
-
-            edges_in_this_round = max_entropy()
-
-            selected_edges.extend(edges_in_this_round)
-            print 'selected edge', selected_edges
-
-
-if __name__ == '__main__':
-    allNodes, ansEdges, ansMatrix = mall_process.mall_process()
-    allEdges = [(nodeA, nodeB) for nodeA in allNodes for nodeB in allNodes]
-    select = apollingSelect(allNodes, allEdges, ansEdges, ansMatrix)
-    for i in select:
-        if(i in ansEdges):
-            print i, ansMatrix[i]
-        else:
-            print 'not in ansEdges! Great!'
-'''

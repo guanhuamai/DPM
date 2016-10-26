@@ -37,4 +37,4 @@ if __name__ == '__main__':
     dec_maker = Apolling(num_workers, num_nd)
     simworkers = SimulationWorkers(num_workers, "uniform")
 
-    top_k(10000, bns_allocator, dec_maker, simworkers)
+    top_k(20000, bns_allocator, dec_maker, simworkers)
