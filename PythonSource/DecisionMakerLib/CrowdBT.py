@@ -1,13 +1,13 @@
 from ApollingInference import *
-from ApollingSelect import *
+from CrowdBTSelect import *
 from DecisionMaker import DecisionMaker
 
 
-class Apolling(DecisionMaker):
+class Crowdbt(DecisionMaker):
 
     def __init__(self, nu_workers, nu_nodes):
         print 'init an apolling engine'
-        super(Apolling, self).__init__(nu_workers, nu_nodes)
+        super(Crowdbt, self).__init__(nu_workers, nu_nodes)
         self.__used_edges = []
         self.__matrix = {}
 
@@ -27,7 +27,7 @@ class Apolling(DecisionMaker):
         self.__used_edges.append(cmp_pair)
 
     def pair_selection(self):
-        return apolling_select(self._num_workers, self._all_nodes, self._all_edges, self.__used_edges, self.__matrix)
+        return crowdbt_select(self._num_workers, self._all_nodes, self._all_edges, self.__used_edges, self.__matrix)
 
     def result_inference(self):
         return apolling_inference(self._all_nodes, self._all_edges, self.__matrix)

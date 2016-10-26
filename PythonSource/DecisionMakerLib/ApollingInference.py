@@ -4,7 +4,6 @@ import random
 import math
 from scipy.stats import norm
 from scipy import optimize
-#import mall_process
 global nodes, edges, M, BaseMatrix
 
 def likelihood(s):
@@ -36,11 +35,11 @@ def inference():
     return result
 
 
-def apolling_inference(allNodes, allEdges, matrix):
+def apolling_inference(all_nodes, all_edges, matrix):
     global nodes, edges, M
-    nodes, tmpedges, M = allNodes, allEdges, matrix
+    nodes, tmp_edges, M = all_nodes, all_edges, matrix
     edges = []
-    for edge in tmpedges:
+    for edge in tmp_edges:
         try:
             if M[edge] > M[(edge[1], edge[0])]:
                 edges.append(edge)
@@ -48,10 +47,3 @@ def apolling_inference(allNodes, allEdges, matrix):
             M[edge] = 0
 
     inference()
-
-
-'''
-if __name__ == "__main__":
-    allNodes, allEdges, matrix = mall_process.mall_process()
-    apollingInference(allNodes, allEdges, matrix)
-'''
