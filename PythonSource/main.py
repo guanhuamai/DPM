@@ -1,6 +1,7 @@
-from IOHMMBaseline import IOHMMBaseline
+
+from BonusAllocatorLib.IOHMMBaseline import IOHMMBaseline
+from DecisionMakerLib.Apolling import Apolling
 from Workers import SimulationWorkers
-from Apolling import Apolling
 
 
 def get_majority(answers):

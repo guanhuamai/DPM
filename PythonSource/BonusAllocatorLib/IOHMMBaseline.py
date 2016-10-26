@@ -1,5 +1,6 @@
 from BonusAllocator import BonusAllocator
 from matlab import engine
+from os import path
 import numpy as np
 
 class IOHMMBaseline(BonusAllocator):
@@ -20,6 +21,7 @@ class IOHMMBaseline(BonusAllocator):
         self.__weights = None
         self.set_parameters()
         self.__matlab_engine = engine.start_matlab()
+        self.__matlab_engine.cd(path.join('..', 'MatlabSource', 'IOHMM'))
 
     def __del__(self):
         self.__matlab_engine.quit()
