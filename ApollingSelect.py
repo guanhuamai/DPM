@@ -234,7 +234,11 @@ def max_entropy():
 
         entropy[edge] = expected_entropy
 
-    return sorted(entropy, key=entropy.get, reverse=True)
+    rslt = sorted(entropy, key=entropy.get, reverse=True)
+    for i in rslt:
+        print i, entropy[i]
+
+    return rslt
 '''
     try:
         result = heapq.nlargest(20, entropy, key=entropy.get)

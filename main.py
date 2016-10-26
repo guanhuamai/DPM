@@ -1,6 +1,7 @@
-from Workers import SimulationWorkers
 from IOHMMBaseline import IOHMMBaseline
+from Workers import SimulationWorkers
 from Apolling import Apolling
+
 
 def get_majority(answers):
     cnt1 = sum(answers)
@@ -8,16 +9,19 @@ def get_majority(answers):
 
 
 def top_k(budget, bonus_allocator, decision_maker, workers):
-
     while budget > 0:
-        cmp_pair = decision_maker.pair_selection()
-        spend = bonus_allocator.bonus_alloc()
+        cmp_pair = decision_maker.pair_selection()  # choose a question pair for publishing
+
+        spend = bonus_allocator.bonus_alloc()  # allocate bonus to workers according to the bonus policy
         budget -= sum(spend)
+
         if budget >= 0:
             print 'budget left', budget
-            workers.publish_questions(workers.available_workers(), cmp_pair, spend)
+            workers.publish_questions(workers.available_workers(), cmp_pair, spend)  # publish questions to workers
             answers = workers.collect_answers()
             majority_vote = get_majority(answers)
+
+            decision_maker.update(cmp_pair, answers)
             bonus_allocator.worker_evaluate(answers, spend, majority_vote)  # train new iohmm model to evaluate workers
         else:
             print 'budget not enough!\n'
@@ -33,4 +37,4 @@ if __name__ == '__main__':
     dec_maker = Apolling(num_workers, num_nd)
     simworkers = SimulationWorkers(num_workers, "uniform")
 
-    top_k(50000, bns_allocator, dec_maker, simworkers)
+    top_k(10000, bns_allocator, dec_maker, simworkers)

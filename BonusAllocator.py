@@ -9,7 +9,6 @@ class BonusAllocator(object):
         self._num_workers = num_workers
 
 
-
     def worker_evaluate(self, *args):
         raise NotImplementedError('Please Implement this method')
 

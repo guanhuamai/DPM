@@ -1,8 +1,6 @@
 import numpy as np
 
 
-
-
 class UniformWorkers(object):
     """
     initialize the worker model in uniform distribution.

@@ -9,9 +9,9 @@ function decisionMatrix = iohmmTraining(observations, inputObs, nstates, ostates
         inputObs{i} = cell2mat(inputObs{i});
     end;
     disp('start training iohmm')
-    nstates = double(nstates)
-    ostates = double(ostates)
-    numiter = double(numiter)
+    nstates = double(nstates);
+    ostates = double(ostates);
+    numiter = double(numiter);
     model = initializeHMMmodel('discrete', nstates, ostates, 2);
     decisionMatrix = IOhmmFit(observations, inputObs, model, numiter);
 end

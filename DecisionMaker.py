@@ -8,7 +8,7 @@ class DecisionMaker(object):
         self._all_nodes = [i for i in range(nu_nodes)]
         self._all_edges = [(i, j) for i in range(nu_nodes) for j in range(nu_nodes)]
 
-    def __update(self, *args):
+    def update(self, *args):
         raise NotImplementedError('Please Implement this method')
 
     def pair_selection(self, *args):
