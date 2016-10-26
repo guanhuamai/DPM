@@ -131,6 +131,10 @@ class SimulationWorkers(object):
         else:
             print 'no such type of workers'
             raise Exception
+        self.num_workers = num_workers
+
+    def available_workers(self):
+        return range(self.num_workers)
 
     def publish_questions(self, worker_ids, cmp_pair, salaries):
         self.cmp_pair = cmp_pair

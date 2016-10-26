@@ -1,7 +1,6 @@
 import sys
 
 sys.path.append("..")
-import random
 import math
 import heapq
 import numpy as np
@@ -235,12 +234,14 @@ def max_entropy():
 
         entropy[edge] = expected_entropy
 
+    return sorted(entropy, key=entropy.get, reverse=True)
+'''
     try:
-        result = heapq.nlargest(10, entropy, key=entropy.get)
+        result = heapq.nlargest(20, entropy, key=entropy.get)
 
     except Exception, e:
         print 'failure selected'
-        result = random.sample(edges, 10)
+        result = random.sample(edges, 20)
 
     cnt = 0
     for e in result:
@@ -249,9 +250,10 @@ def max_entropy():
         if cnt == 9:
             break
     return result
+'''
 
 
-def apollingSelect(numWorkers, allNodes, ansEdges, allEdges, ansMatrix):
+def apolling_select(pnum_workers, all_nodes, ans_edges, all_edges, ans_matrix):
     'Preparation'
     global selected_edges, nodes, edges, M, BaseMatrix, last_score, Hessian, record_inv_matrix, record_current_matrix
     global left_edges, num_workers
@@ -259,9 +261,9 @@ def apollingSelect(numWorkers, allNodes, ansEdges, allEdges, ansMatrix):
     Hessian = {}
     record_inv_matrix = []
     record_current_matrix = []
-    nodes, edges = allNodes, allEdges
-    num_workers = numWorkers
-    BaseMatrix = copy.deepcopy(ansMatrix)
+    nodes, edges = all_nodes, all_edges
+    num_workers = pnum_workers
+    BaseMatrix = copy.deepcopy(ans_matrix)
 
     for nodeA in nodes:
         for nodeB in nodes:
@@ -278,21 +280,23 @@ def apollingSelect(numWorkers, allNodes, ansEdges, allEdges, ansMatrix):
         for nodeB in nodes:
             Hessian[(nodeA, nodeB)] = 0
 
-    selected_edges = ansEdges
+    selected_edges = ans_edges
 
     left_edges = []
 
-    edges_in_this_round = max_entropy()
-
-    for edge in edges_in_this_round:
-        if edge[0] != edge[1]:
-            print 'success selected', edge
-            return edge
-
-    for e in edges_in_this_round:
-        print BaseMatrix[e]
-
-    return edges_in_this_round[0]
+    try:
+        edges_in_this_round = max_entropy()
+        for edge in edges_in_this_round:
+            if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
+                print 'success selected', edge
+                return edge
+    except IndexError:
+        while True:
+            edge = all_edges[np.random.choice(len(all_edges), 1)[0]]
+            if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
+                print 'failure selected', edge
+                return edge
+    return -1, -1
 
 
 '''

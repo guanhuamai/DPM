@@ -36,7 +36,7 @@ def inference():
     return result
 
 
-def apollingInference(allNodes, allEdges, matrix):
+def apolling_inference(allNodes, allEdges, matrix):
     global nodes, edges, M
     nodes, tmpedges, M = allNodes, allEdges, matrix
     edges = []
