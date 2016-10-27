@@ -6,9 +6,8 @@ import numpy as np
 class IOHMMBaseline(BonusAllocator):
 
     def __init__(self, num_workers, base_cost=5, bns=2, hist_qlt_bns=None):
-        print 'init an IOHMMBaseline bonus allocator'
         super(IOHMMBaseline, self).__init__(num_workers, base_cost, bns)
-
+        print 'init an IOHMMBaseline bonus allocator'
         if hist_qlt_bns is None:
             hist_qlt_bns = dict(zip(range(num_workers), [[] for _ in range(num_workers)]))
 

@@ -1,5 +1,5 @@
 from BonusAllocatorLib.IOHMMBaseline import IOHMMBaseline
-from DecisionMakerLib.Apolling import Apolling
+from DecisionMakerLib.Crowdbt import Crowdbt
 from Workers import SimulationWorkers
 
 
@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     bns_allocator = IOHMMBaseline(num_workers)
     bns_allocator.set_parameters(numitr=200)
-    dec_maker = Apolling(num_workers, num_nd)
+    dec_maker = Crowdbt(num_workers, num_nd)
     simworkers = SimulationWorkers(num_workers, "uniform")
 
     top_k(20000, bns_allocator, dec_maker, simworkers)

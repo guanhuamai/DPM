@@ -2,8 +2,7 @@
 import sys
 from numpy import Inf
 sys.path.append("../Inference")
-import numpy
-import time
+import numpy as np
 import scipy.stats
 import random
 import heapq
@@ -208,7 +207,6 @@ def update_worker_para(i, j, k):
 
 def select_pair_with_max_information():
     from math import exp as e
-    start = time.time()
     estimated_entropy = {}
 
     esti_not_topk = []
@@ -249,18 +247,18 @@ def select_pair_with_max_information():
                     i, j, k)
 
                 'Computation of the entropy if i wins'
-                post_distribution_i = numpy.random.normal(
+                post_distribution_i = np.random.normal(
                     posterior_score_i, posterior_variance_i, 100)
-                post_distribution_j = numpy.random.normal(
+                post_distribution_j = np.random.normal(
                     posterior_score_j, posterior_variance_j, 100)
-                post_distribution_k = numpy.random.beta(
+                post_distribution_k = np.random.beta(
                     posterior_worker_first, posterior_worker_second, 100)
 
-                prior_distribution_i = numpy.random.normal(
+                prior_distribution_i = np.random.normal(
                     score[i], variance[i], 100)
-                prior_distribution_j = numpy.random.normal(
+                prior_distribution_j = np.random.normal(
                     score[j], variance[j], 100)
-                prior_distribution_k = numpy.random.beta(
+                prior_distribution_k = np.random.beta(
                     worker_quality[k][0], worker_quality[k][1], 100)
 
                 list_post_distribution_i, list_prior_distribution_i = positive(
@@ -296,18 +294,18 @@ def select_pair_with_max_information():
                     j, i, k)
 
                 'Computation of the entropy if j wins'
-                post_distribution_i = numpy.random.normal(
+                post_distribution_i = np.random.normal(
                     posterior_score_i, posterior_variance_i, 100)
-                post_distribution_j = numpy.random.normal(
+                post_distribution_j = np.random.normal(
                     posterior_score_j, posterior_variance_j, 100)
-                post_distribution_k = numpy.random.beta(
+                post_distribution_k = np.random.beta(
                     posterior_worker_first, posterior_worker_second, 100)
 
-                prior_distribution_i = numpy.random.normal(
+                prior_distribution_i = np.random.normal(
                     score[i], variance[i], 100)
-                prior_distribution_j = numpy.random.normal(
+                prior_distribution_j = np.random.normal(
                     score[j], variance[j], 100)
-                prior_distribution_k = numpy.random.beta(
+                prior_distribution_k = np.random.beta(
                     worker_quality[k][0], worker_quality[k][1], 100)
 
                 list_post_distribution_i, list_prior_distribution_i = positive(
@@ -351,8 +349,6 @@ def select_pair_with_max_information():
         selected_edge = random.choice(list(set(edges) - set(Asked_Pairs)))
         selected_triplet = (selected_edge[0], selected_edge[1], 0)
 
-    end = time.time()
-    print 'computation time of the entropy', (end - start)
     return selected_triplet
 
 
@@ -417,4 +413,13 @@ def crowdbt_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
     # all_nodes, ans_edges, ans_matrix = mall_process.mall_process()
     # all_edges = [(nodeA, nodeB)for nodeA in all_nodes for nodeB in all_nodes]
     Initial_Process(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix)
-    return selection_process()
+    edge =  selection_process()
+    if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
+        print 'success selected', edge
+        return edge
+    else:
+        while True:
+            edge = all_edges[np.random.choice(len(all_edges), 1)[0]]
+            if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
+                print 'failed, randomly selected', edge
+                return edge

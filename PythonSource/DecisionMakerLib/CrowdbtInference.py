@@ -42,7 +42,7 @@ def optimization_crowdbt():
     return [item[0] for item in sorted_score]
 
 
-def apolling_inference(allNodes, allEdges, matrix):
+def crowdbt_inference(allNodes, allEdges, matrix):
     global nodes, edges, Matrix
     nodes, tmp_edges, Matrix = allNodes, allEdges, matrix
     edges = []
@@ -52,3 +52,6 @@ def apolling_inference(allNodes, allEdges, matrix):
                 edges.append(edge)
         except KeyError:
             Matrix[edge] = 0
+    rslt = optimization_crowdbt()
+    print rslt
+    return rslt

@@ -6,8 +6,8 @@ from DecisionMaker import DecisionMaker
 class Apolling(DecisionMaker):
 
     def __init__(self, nu_workers, nu_nodes):
-        print 'init an apolling engine'
         super(Apolling, self).__init__(nu_workers, nu_nodes)
+        print 'init an apolling engine'
         self.__used_edges = []
         self.__matrix = {}
 
