@@ -60,7 +60,7 @@ class IOHmmWorkers(object):
     """
     initialize the worker model in iohmm.
         # model parameter:
-        #  transition[1/0]: bonus (or not) transition prbability matrix
+        #  transition[1/0]: bonus (or not) transition probability matrix
         #  r: reference payment level
         #  alpha: skill level alpha
         #  pAlph: the probability distribution of skill level in the population, add up tp 1
@@ -98,8 +98,8 @@ class IOHmmWorkers(object):
     """
     def _update_state(self, worker_ids, bns):  # update hidden state for all workers
         self.z = [np.random.choice(len(self.transition[bns[i]]),  # number of hidden states
-                    1, p=self.transition[bns[i]][self.z[worker_ids[i]]])  # transition probability
-                    for i in range(len(worker_ids))]
+                  1, p=self.transition[bns[i]][self.z[worker_ids[i]]])  # transition probability
+                  for i in range(len(worker_ids))]
 
     """
     assign a question to the workers in 'workerIDs'
@@ -110,7 +110,7 @@ class IOHmmWorkers(object):
         #  0/1 list with same size as workerIDs, indicates their working result is correct(with 1) or not(with 0)
     """
     def work(self, worker_ids, bns):
-        # emission probabilitie: 1 / (1 + e ^ (-alphi - betai(at - rzt))  "bonus or not 4.2"
+        # emission probabilities: 1 / (1 + e ^ (-alphi - betai(at - rzt))  "bonus or not 4.2"
         probs = [1 / (1 + np.exp(-self.situations[idx][0] -
                  self.situations[idx][1] * (bns[idx] - self.r[self.z[idx]]))) for idx in worker_ids]
 
@@ -130,13 +130,15 @@ class SimulationWorkers(object):
             print 'no such type of workers'
             raise Exception
         self.num_workers = num_workers
+        self.cmp_pair = (-1, -1)
+        self.qualities = None
 
     def available_workers(self):
         return range(self.num_workers)
 
-    def publish_questions(self, worker_ids, cmp_pair, salaries):
+    def publish_questions(self, worker_ids, cmp_pair, salariess):
         self.cmp_pair = cmp_pair
-        self.qualities = self.workers.work(worker_ids, salaries)
+        self.qualities = self.workers.work(worker_ids, salariess)
 
     def collect_answers(self):
         return [int(quality == int(self.cmp_pair[0] < self.cmp_pair[1])) for quality in self.qualities]

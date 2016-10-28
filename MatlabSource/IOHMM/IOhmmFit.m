@@ -60,8 +60,10 @@ function model = IOhmmFit(data, inputObs, model, numiter)
     end;
     inputObs0 = [0; 1];
     inputObs1 = [1; 0];
-    A0 = transitionMatrix(model.W, inputObs0, model); 
+    A0 = transitionMatrix(model.W, inputObs0, model);
     A1 = transitionMatrix(model.W, inputObs1, model);
+    model.A0 = A0;
+    model.A1 = A1;
     A0 = A0 * model.B;
     A1 = A1 * model.B;
     disp(model.B)

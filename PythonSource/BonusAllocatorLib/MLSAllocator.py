@@ -2,18 +2,18 @@ from BonusAllocator import BonusAllocator
 from matlab import engine
 from os import path
 import numpy as np
+import mdptoolbox as mdptb
 
 
-class IOHMMBaseline(BonusAllocator):
+class MLSAllocator(BonusAllocator):
 
     def __init__(self, num_workers, base_cost=5, bns=2, hist_qlt_bns=None):
-        super(IOHMMBaseline, self).__init__(num_workers, base_cost, bns)
-        print 'init an IOHMMBaseline bonus allocator'
+        super(MLSAllocator, self).__init__(num_workers, base_cost, bns)
+        print 'init an mls-mdp bonus allocator'
         if hist_qlt_bns is None:
             hist_qlt_bns = dict(zip(range(num_workers), [[] for _ in range(num_workers)]))
 
         self.__hist_qlt_bns = hist_qlt_bns
-        self.__prfrm_mat = [[[], []] for _ in range(num_workers)]  # performance matrix
 
         self.__nstates = 0
         self.__ostates = 0
@@ -48,16 +48,36 @@ class IOHMMBaseline(BonusAllocator):
         self.__prfrm_mat = self.__matlab_engine.iohmmTraining(ou_obs, in_obs, self.__nstates,
                                                               self.__ostates, self.__numitr)['result']
 
-    def __expect_util(self, worker_id, is_bns):
-        utility = 0
-        if len(self.__prfrm_mat[worker_id][is_bns]) == 0:
-            return np.random.random()
-        else:
-            for i in range(len(self.__prfrm_mat[worker_id][is_bns][0])):  # traverse all the different quality
-                prob = self.__prfrm_mat[worker_id][is_bns][0][i]
-                utility += prob * self.__weights[i]
-        utility -= (self._base_cost + is_bns * self._bns) * self.__weights[-1]
-        return utility
+    def viterbi(self, start_probs, tmats, emat, inobs, ouobs, T):  # tmats[0] transition matrix when not bonus
+        t_val = list()
+        t_val.append([start_probs[i] * emat[i][ouobs[0]] for i in range(self.__nstates)])  # 1 * N
+        t_sta = list()
+        t_sta.append([-1 for _ in range(self.__nstates)])
+        for cur_t in range(1, T, 1):
+            for j in range(self.__nstates):
+                t_val.append([])
+                t_sta.append([])
+                max_val = 0
+                max_sta = -1
+                for i in range(self.__nstates):
+                    tmp_val = t_val[cur_t - 1][i] * tmats[inobs[cur_t]][i][j] * emat[j][ouobs[cur_t]]
+                    tmp_sta = i
+                    if max_val < tmp_val:
+                        max_val = tmp_val
+                        max_sta = tmp_sta
+                t_val[cur_t].append(max_val)
+                t_sta[cur_t].append(max_sta)
+        max_val = 0
+        max_sta = -1
+        for i in range(self.__nstates):
+            if max_val < t_val[T - 1][i]:
+                max_val = t_val[T - 1][i]
+                max_sta = t_sta[T - 1][i]
+        return max_sta
+
+
+
+
 
     def bonus_alloc(self):
         spend = []

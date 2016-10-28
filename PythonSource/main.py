@@ -33,7 +33,7 @@ if __name__ == '__main__':
     num_workers = 200
 
     bns_allocator = IOHMMBaseline(num_workers)
-    bns_allocator.set_parameters(numitr=200)
+    bns_allocator.set_parameters(numitr=500)
     dec_maker = Crowdbt(num_workers, num_nd)
     simworkers = SimulationWorkers(num_workers, "uniform")
 
