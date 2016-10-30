@@ -1,19 +1,20 @@
 from BonusAllocator import BonusAllocator
 from matlab import engine
 from os import path
+import numpy as np
 
 
-class NStepAllocator(BonusAllocator):
+class QLearningAllocator(BonusAllocator):
 
-    def __init__(self, num_workers, nstep=5, len_seq=10, base_cost=5, bns=2, hist_qlt_bns=None):
-        super(NStepAllocator, self).__init__(num_workers, base_cost, bns)
+    def __init__(self, num_workers, discnt=0.99, len_seq=10, base_cost=5, bns=2, hist_qlt_bns=None):
+        super(QLearningAllocator, self).__init__(num_workers, base_cost, bns)
         print 'init an mls-mdp bonus allocator'
         if hist_qlt_bns is None:
             hist_qlt_bns = dict(zip(range(num_workers), [[] for _ in range(num_workers)]))
 
         self.__hist_qlt_bns = hist_qlt_bns
-        self.__nstep = nstep
         self.__len_seq = len_seq
+        self.__discnt = discnt
 
         self.__nstates = 0   # number of hidden states, denoted as S
         self.__ostates = 0   # number of observations, denoted as O
@@ -33,19 +34,19 @@ class NStepAllocator(BonusAllocator):
     def __del__(self):
         self.__matlab_engine.quit()
 
-    def set_parameters(self, nstates=3, ostates=2, strt_prob=None, numitr=1000, weights=None, nstep=5, len_seq=10):
+    def set_parameters(self, nstates=3, ostates=2, strt_prob=None, numitr=1000, weights=None, discnt=0.99, len_seq=10):
         if weights is None:
             weights = [0, 1, 23]  # default value of the weights
 
         if strt_prob is None:
             strt_prob = [ 1.0 / nstates for _ in range(nstates)]
 
+        self.__discnt = discnt
         self.__nstates = nstates   # number of hidden states
         self.__ostates = ostates   # number of observations
         self.__strt_prob = strt_prob
         self.__numitr = numitr     # number of iteration in EM algorithm
         self.__weights = weights   # utility weight of different performance and cost, bad: 0, good: 1, cost weight
-        self.__nstep = nstep
         self.__len_seq = len_seq
 
 
@@ -63,7 +64,8 @@ class NStepAllocator(BonusAllocator):
         self.__tmat0 = model['A0']
         self.__tmat1 = model['A1']
         self.__emat = model['B']
-        self.__belief = [self.viterbi(in_obs[i], ou_obs[i], len(self.__hist_qlt_bns[i])) for i in range(self._num_workers)]
+        self.__belief = [self.viterbi(in_obs[i], ou_obs[i], len(self.__hist_qlt_bns[i]))
+                         for i in range(self._num_workers)]
 
     def viterbi(self, inobs, ouobs, T):  # tmats[0] transition matrix when not bonus
         t_val = list()
@@ -80,44 +82,28 @@ class NStepAllocator(BonusAllocator):
                 t_val[cur_t].append(max_val)
         return t_val
 
-    def __cal_reward(self, belief, is_bonus):
+    def __cal_reward(self, k, a):
         trans_mat = [self.__tmat0, self.__tmat1]
-        state_rew = [belief[i] * sum([trans_mat[is_bonus][i][j] *
-                                      (self.__emat[j][0] * self.__weights[0] + self.__emat[j][1] *
-                                       (self.__weights[1] - self.__weights[2] * int(is_bonus)))
-                                      for j in range(self.__nstates)]) for i in range(self.__nstates)]
-        return sum(state_rew)
+        return sum([trans_mat[a][k][i] * (self.__emat[i][0] * self.__weights[0] + self.__emat[i][1] * (
+                    self.__weights[1] - a * self.__weights[2])) for i in range(self.__nstates)])
 
-    def __cal_belief(self, belief, is_bonus, obs):
-        trans_mat = [self.__tmat0, self.__tmat1]
-        return [sum([belief[i] * trans_mat[is_bonus][i][j] * self.__emat[j][obs] for i in range(self.__nstates)])
-                for j in range(len(belief))]
+    def __cal_q(self):
+        q_mat = np.zeros((self.__nstates, 2))
+        tmats = (self.__tmat0, self.__tmat1)
+        for __ in range(self.__numitr):
+            k = np.random.choice(range(self.__nstates), 1)[0]
+            for i in range(self.__len_seq - len(self.__hist_qlt_bns % self.__len_seq)):
+                a = np.random.choice([0, 1], 1)[0]  # select an input randomly
+                k_prime = np.random.choice(range(self.__nstates), 1, tmats[a][k])[0]
+                q_mat[k][a] = self.__cal_q(k, a) + self.__discnt * max(q_mat[k_prime])
+        return q_mat
 
-    def __exp_utility(self, belief, a, nstep):
-        trans_mat = [self.__tmat0, self.__tmat1]
-        if nstep == 1:
-            return self.__cal_reward(belief, a)
-        rslt = 0
-        for x in range(self.__ostates):
-            sum_state_exp = 0
-            for i in range(self.__nstates):
-                state_exp = 0
-                for j in range(self.__nstates):
-                    state_exp += trans_mat[a][i][j] * self.__emat[j][x]
-                sum_state_exp += belief[i] * state_exp
-
-            # expected utility when no given bonus
-            expt_util0 = self.__exp_utility(self.__cal_belief(belief, 0, x))
-            # expected utility when given bonus
-            expt_util1 = self.__exp_utility(self.__cal_belief(belief, 1, x))
-            v_val = max(expt_util0, expt_util1)
-            rslt += sum_state_exp * v_val
-        return rslt
 
     def bonus_alloc(self):
+        q_mat = self.__cal_q()
         spend = []
         for worker_id in self._num_workers:
-            exp0 = self.__exp_utility(self.__belief[worker_id], 0, self.__nstep)
-            exp1 = self.__exp_utility(self.__belief[worker_id], 1, self.__nstep)
+            exp0 = sum(self.__belief[worker_id][k] * q_mat[k][0] for k in range(len(self.__nstates)))
+            exp1 = sum(self.__belief[worker_id][k] * q_mat[k][1] for k in range(len(self.__nstates)))
             spend.append(self._base_cost + (exp1 > exp0) * self._bns)
         return spend
