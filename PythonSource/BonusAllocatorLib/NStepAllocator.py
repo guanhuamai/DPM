@@ -8,7 +8,7 @@ class NStepAllocator(BonusAllocator):
 
     def __init__(self, num_workers, nstep=5, len_seq=10, base_cost=5, bns=2, hist_qlt_bns=None):
         super(NStepAllocator, self).__init__(num_workers, base_cost, bns)
-        print 'init an mls-mdp bonus allocator'
+        print 'init an nstep look ahead bonus allocator'
         if hist_qlt_bns is None:
             hist_qlt_bns = dict(zip(range(num_workers), [[] for _ in range(num_workers)]))
 
@@ -60,9 +60,11 @@ class NStepAllocator(BonusAllocator):
                   for seqid in self.__hist_qlt_bns]  # input observations of every sequences
         model = self.__matlab_engine.iohmmTraining(ou_obs, in_obs, self.__nstates,
                                                               self.__ostates, self.__numitr)
-        self.__tmat0 = model['A0']
-        self.__tmat1 = model['A1']
-        self.__emat = model['B']
+        in_obs = [[int(io_pairs[1] > self._base_cost) for io_pairs in self.__hist_qlt_bns[seqid]]
+                  for seqid in self.__hist_qlt_bns]  # input observations of every sequences
+        self.__tmat0 = list(model['A0'])
+        self.__tmat1 = list(model['A1'])
+        self.__emat = list(model['B'])
         self.__belief = [self.viterbi(in_obs[i], ou_obs[i], len(self.__hist_qlt_bns[i])) for i in range(self._num_workers)]
 
     def viterbi(self, inobs, ouobs, T):  # tmats[0] transition matrix when not bonus
@@ -92,8 +94,9 @@ class NStepAllocator(BonusAllocator):
 
     def __exp_utility(self, belief, a, nstep):
         trans_mat = [self.__tmat0, self.__tmat1]
+        rewrd = self.__cal_reward(belief, a)
         if nstep == 1:
-            return self.__cal_reward(belief, a)
+            return rewrd
         rslt = 0
         for x in range(self.__ostates):
             sum_state_exp = 0
@@ -104,19 +107,20 @@ class NStepAllocator(BonusAllocator):
                 sum_state_exp += belief[i] * state_exp
 
             # expected utility when no given bonus
-            expt_util0 = self.__exp_utility(self.__cal_belief(belief, 0, x))
+            expt_util0 = self.__exp_utility(self.__cal_belief(belief, 0, x), 0, nstep-1)
             # expected utility when given bonus
-            expt_util1 = self.__exp_utility(self.__cal_belief(belief, 1, x))
+            expt_util1 = self.__exp_utility(self.__cal_belief(belief, 1, x), 1, nstep-1)
             v_val = max(expt_util0, expt_util1)
             rslt += sum_state_exp * v_val
+        rslt += rewrd
         return rslt
 
     def bonus_alloc(self):
         spend = []
         if self.__belief is not None:
-            for worker_id in self._num_workers:
-                exp0 = self.__exp_utility(self.__belief[worker_id], 0, self.__nstep)
-                exp1 = self.__exp_utility(self.__belief[worker_id], 1, self.__nstep)
+            for worker_id in range(self._num_workers):
+                exp0 = self.__exp_utility(self.__belief[worker_id][-1], 0, self.__nstep)
+                exp1 = self.__exp_utility(self.__belief[worker_id][-1], 1, self.__nstep)
                 spend.append(self._base_cost + (exp1 > exp0) * self._bns)
         else:
             spend = map(lambda x: self._base_cost + (x == 1) * self._bns, np.random.choice(2, self._num_workers))

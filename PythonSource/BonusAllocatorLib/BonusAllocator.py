@@ -3,7 +3,7 @@
 class BonusAllocator(object):
 
     def __init__(self, num_workers, base_cost=5, bns=2):
-        print 'init an base bonus allocator'
+        print 'init a base bonus allocator'
         self._base_cost = base_cost
         self._bns = bns
         self._num_workers = num_workers
