@@ -1,4 +1,4 @@
-from BonusAllocatorLib.IOHMMBaseline import IOHMMBaseline
+from BonusAllocatorLib.NStepAllocator import NStepAllocator
 from DecisionMakerLib.Crowdbt import Crowdbt
 from Workers import SimulationWorkers
 
@@ -32,7 +32,7 @@ if __name__ == '__main__':
     num_nd = 10
     num_workers = 200
 
-    bns_allocator = IOHMMBaseline(num_workers)
+    bns_allocator = NStepAllocator(num_workers)
     bns_allocator.set_parameters(numitr=500)
     dec_maker = Crowdbt(num_workers, num_nd)
     simworkers = SimulationWorkers(num_workers, "uniform")

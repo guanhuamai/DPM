@@ -1,6 +1,7 @@
 from BonusAllocator import BonusAllocator
 from matlab import engine
 from os import path
+import numpy as np
 
 
 class NStepAllocator(BonusAllocator):
@@ -48,7 +49,6 @@ class NStepAllocator(BonusAllocator):
         self.__nstep = nstep
         self.__len_seq = len_seq
 
-
     def worker_evaluate(self, col_ans, spend, majority_vote):
         for worker in self.__hist_qlt_bns:
             self.__hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))
@@ -67,17 +67,14 @@ class NStepAllocator(BonusAllocator):
 
     def viterbi(self, inobs, ouobs, T):  # tmats[0] transition matrix when not bonus
         t_val = list()
-        t_val.append([self.__start_probs[i] * self.__emat[i][ouobs[0]] for i in range(self.__nstates)])  # 1 * N
+        t_val.append([self.__strt_prob[i] * self.__emat[i][ouobs[0]] for i in range(self.__nstates)])  # 1 * N
         tmats = (self.__tmat0, self.__tmat1)
         for cur_t in range(1, T, 1):
+            t_val.append([])
             for j in range(self.__nstates):
-                t_val.append([])
-                max_val = 0
-                for i in range(self.__nstates):
-                    tmp_val = t_val[cur_t - 1][i] * tmats[inobs[cur_t]][i][j] * self.__emat[j][ouobs[cur_t]]
-                    if max_val < tmp_val:
-                        max_val = tmp_val
-                t_val[cur_t].append(max_val)
+                tmp_val = [t_val[cur_t - 1][i] * tmats[inobs[cur_t]][i][j] * self.__emat[j][ouobs[cur_t]]
+                           for i in range(self.__nstates)]
+                t_val[cur_t].append(np.max(tmp_val))
         return t_val
 
     def __cal_reward(self, belief, is_bonus):
@@ -116,8 +113,11 @@ class NStepAllocator(BonusAllocator):
 
     def bonus_alloc(self):
         spend = []
-        for worker_id in self._num_workers:
-            exp0 = self.__exp_utility(self.__belief[worker_id], 0, self.__nstep)
-            exp1 = self.__exp_utility(self.__belief[worker_id], 1, self.__nstep)
-            spend.append(self._base_cost + (exp1 > exp0) * self._bns)
+        if self.__belief is not None:
+            for worker_id in self._num_workers:
+                exp0 = self.__exp_utility(self.__belief[worker_id], 0, self.__nstep)
+                exp1 = self.__exp_utility(self.__belief[worker_id], 1, self.__nstep)
+                spend.append(self._base_cost + (exp1 > exp0) * self._bns)
+        else:
+            spend = map(lambda x: self._base_cost + (x == 1) * self._bns, np.random.choice(2, self._num_workers))
         return spend

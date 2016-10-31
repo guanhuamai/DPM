@@ -8,7 +8,7 @@ class QLearningAllocator(BonusAllocator):
 
     def __init__(self, num_workers, discnt=0.99, len_seq=10, base_cost=5, bns=2, hist_qlt_bns=None):
         super(QLearningAllocator, self).__init__(num_workers, base_cost, bns)
-        print 'init an mls-mdp bonus allocator'
+        print 'init an qlearnig-mdp bonus allocator'
         if hist_qlt_bns is None:
             hist_qlt_bns = dict(zip(range(num_workers), [[] for _ in range(num_workers)]))
 
@@ -61,25 +61,25 @@ class QLearningAllocator(BonusAllocator):
                   for seqid in self.__hist_qlt_bns]  # input observations of every sequences
         model = self.__matlab_engine.iohmmTraining(ou_obs, in_obs, self.__nstates,
                                                               self.__ostates, self.__numitr)
-        self.__tmat0 = model['A0']
-        self.__tmat1 = model['A1']
-        self.__emat = model['B']
+
+        in_obs = [[int(io_pairs[1] > self._base_cost) for io_pairs in self.__hist_qlt_bns[seqid]]
+                  for seqid in self.__hist_qlt_bns]  # input observations of every sequences
+        self.__tmat0 = list(model['A0'])
+        self.__tmat1 = list(model['A1'])
+        self.__emat = list(model['B'])
         self.__belief = [self.viterbi(in_obs[i], ou_obs[i], len(self.__hist_qlt_bns[i]))
                          for i in range(self._num_workers)]
 
     def viterbi(self, inobs, ouobs, T):  # tmats[0] transition matrix when not bonus
         t_val = list()
-        t_val.append([self.__start_probs[i] * self.__emat[i][ouobs[0]] for i in range(self.__nstates)])  # 1 * N
+        t_val.append([self.__strt_prob[i] * self.__emat[i][ouobs[0]] for i in range(self.__nstates)])  # 1 * N
         tmats = (self.__tmat0, self.__tmat1)
         for cur_t in range(1, T, 1):
+            t_val.append([])
             for j in range(self.__nstates):
-                t_val.append([])
-                max_val = 0
-                for i in range(self.__nstates):
-                    tmp_val = t_val[cur_t - 1][i] * tmats[inobs[cur_t]][i][j] * self.__emat[j][ouobs[cur_t]]
-                    if max_val < tmp_val:
-                        max_val = tmp_val
-                t_val[cur_t].append(max_val)
+                tmp_val = [t_val[cur_t - 1][i] * tmats[inobs[cur_t]][i][j] * self.__emat[j][ouobs[cur_t]]
+                           for i in range(self.__nstates)]
+                t_val[cur_t].append(np.max(tmp_val))
         return t_val
 
     def __cal_reward(self, k, a):
@@ -88,22 +88,28 @@ class QLearningAllocator(BonusAllocator):
                     self.__weights[1] - a * self.__weights[2])) for i in range(self.__nstates)])
 
     def __cal_q(self):
+        if len(self.__hist_qlt_bns[0]) == 0:  # the first worker has not history of quality and bonus
+            return None
         q_mat = np.zeros((self.__nstates, 2))
         tmats = (self.__tmat0, self.__tmat1)
         for __ in range(self.__numitr):
-            k = np.random.choice(range(self.__nstates), 1)[0]
-            for i in range(self.__len_seq - len(self.__hist_qlt_bns % self.__len_seq)):
+            k = np.random.choice(range(self.__nstates), 1)[0]  # random select start states
+            for i in range(self.__len_seq - len(self.__hist_qlt_bns[0]) % self.__len_seq):
                 a = np.random.choice([0, 1], 1)[0]  # select an input randomly
-                k_prime = np.random.choice(range(self.__nstates), 1, tmats[a][k])[0]
-                q_mat[k][a] = self.__cal_q(k, a) + self.__discnt * max(q_mat[k_prime])
+                k_prime = np.random.choice(range(self.__nstates), 1, tmats[a][k])[0]   # randomly select next states
+                q_mat[k][a] = self.__cal_reward(k, a) + self.__discnt * max(q_mat[k_prime])
         return q_mat
 
 
     def bonus_alloc(self):
         q_mat = self.__cal_q()
         spend = []
-        for worker_id in self._num_workers:
-            exp0 = sum(self.__belief[worker_id][k] * q_mat[k][0] for k in range(len(self.__nstates)))
-            exp1 = sum(self.__belief[worker_id][k] * q_mat[k][1] for k in range(len(self.__nstates)))
-            spend.append(self._base_cost + (exp1 > exp0) * self._bns)
+        if q_mat is not None:  # history can be used to train q-mdp
+            for worker_id in range(self._num_workers):
+                exp0 = sum([self.__belief[worker_id][-1][k] * q_mat[k][0] for k in range(self.__nstates)])
+                exp1 = sum([self.__belief[worker_id][-1][k] * q_mat[k][1] for k in range(self.__nstates)])
+                spend.append(self._base_cost + (exp1 > exp0) * self._bns)
+        else:  # history is not long enough
+            spend = map(lambda x: self._base_cost + (x == 1) * self._bns, np.random.choice(2, self._num_workers))
+
         return spend
