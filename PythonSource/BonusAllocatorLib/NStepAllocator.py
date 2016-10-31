@@ -65,7 +65,8 @@ class NStepAllocator(BonusAllocator):
         self.__tmat0 = list(model['A0'])
         self.__tmat1 = list(model['A1'])
         self.__emat = list(model['B'])
-        self.__belief = [self.viterbi(in_obs[i], ou_obs[i], len(self.__hist_qlt_bns[i])) for i in range(self._num_workers)]
+        self.__belief = [self.viterbi(in_obs[i], ou_obs[i], len(self.__hist_qlt_bns[i]))  # not standardized!
+                         for i in range(self._num_workers)]
 
     def viterbi(self, inobs, ouobs, T):  # tmats[0] transition matrix when not bonus
         t_val = list()
@@ -76,7 +77,7 @@ class NStepAllocator(BonusAllocator):
             for j in range(self.__nstates):
                 tmp_val = [t_val[cur_t - 1][i] * tmats[inobs[cur_t]][i][j] * self.__emat[j][ouobs[cur_t]]
                            for i in range(self.__nstates)]
-                t_val[cur_t].append(np.max(tmp_val))
+                t_val[cur_t].append(sum(tmp_val))
         return t_val
 
     def __cal_reward(self, belief, is_bonus):

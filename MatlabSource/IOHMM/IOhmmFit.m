@@ -71,8 +71,8 @@ function model = IOhmmFit(data, inputObs, model, numiter)
     for i=1:size(inputObs, 2)
         %disp(alph{i})
         model.result{i} = cell(1, 2);
-        model.result{i}{1} = alph{i}(:,1)' * A0;
-        model.result{i}{2} = alph{i}(:,1)' * A1;
+        model.result{i}{1} = alph{i}(:,end)' * A0;
+        model.result{i}{2} = alph{i}(:,end)' * A1;
     end;
 
     %figure, plot(ll);
