@@ -25,7 +25,6 @@ class UniformWorkers(object):
         #  0/1 list with same size as workerIDs, indicates their working result is correct(with 1) or not(with 0)
     """
     def work(self, worker_ids, bns):
-        bns = map(lambda x: (x != 0) * 1, bns)  # convert value to bool
         probs = [self.accMatrix[bns[i]][self.workerTypes[worker_ids[i]]] for i in range(len(worker_ids))]
         return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
 
@@ -51,7 +50,6 @@ class BetaWorkers(object):
         #  0/1 list with same size as workerIDs, indicates their working result is correct(with 1) or not(with 0)
     """
     def work(self, worker_ids, bns):
-        bns = map(lambda x: (x != 0), bns)  # convert value to bool
         probs = [self.accMatrix[idx][bns[idx]] for idx in worker_ids]
         return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
 
@@ -119,7 +117,7 @@ class IOHmmWorkers(object):
 
 
 class SimulationWorkers(object):
-    def __init__(self, num_workers, simtype):
+    def __init__(self, num_workers, simtype, base_cost=5, bns=2):
         if simtype == 'uniform':
             self.workers = UniformWorkers(num_workers)
         elif simtype == 'beta':
@@ -129,6 +127,9 @@ class SimulationWorkers(object):
         else:
             print 'no such type of workers'
             raise Exception
+
+        self._base_cost = base_cost
+        self._bns = bns
         self.num_workers = num_workers
         self.cmp_pair = (-1, -1)
         self.qualities = None
@@ -136,9 +137,10 @@ class SimulationWorkers(object):
     def available_workers(self):
         return range(self.num_workers)
 
-    def publish_questions(self, worker_ids, cmp_pair, salariess):
+    def publish_questions(self, worker_ids, cmp_pair, salaries):
         self.cmp_pair = cmp_pair
-        self.qualities = self.workers.work(worker_ids, salariess)
+        bns = [int(salary > self._base_cost) for salary in salaries]
+        self.qualities = self.workers.work(worker_ids, bns)
 
     def collect_answers(self):
         return [int(quality == int(self.cmp_pair[0] < self.cmp_pair[1])) for quality in self.qualities]

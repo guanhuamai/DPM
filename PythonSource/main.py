@@ -40,40 +40,41 @@ if __name__ == '__main__':
 
     num_nd = 10
     num_workers = 20
+    base_cost = 5
+    bns = 2
 
-
-    bns_allocator = MLSAllocator(num_workers)
+    bns_allocator = MLSAllocator(num_workers, base_cost=base_cost, bns=bns)
     bns_allocator.set_parameters(numitr=500)
     dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm")
+    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
     with open('mlslog', 'w') as expelog:
         top_k(bns_allocator, dec_maker, simworkers, expelog)
 
 
-    bns_allocator = IOHMMBaseline(num_workers)
+    bns_allocator = IOHMMBaseline(num_workers, base_cost=base_cost, bns=bns)
     bns_allocator.set_parameters(numitr=500)
     dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm")
+    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
     with open('baselinelog', 'w') as expelog:
         top_k(bns_allocator, dec_maker, simworkers, expelog)
 
-    bns_allocator = QLearningAllocator(num_workers)
+    bns_allocator = QLearningAllocator(num_workers, base_cost=base_cost, bns=bns)
     bns_allocator.set_parameters(numitr=500)
     dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm")
+    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
     with open('qlearnlog', 'w') as expelog:
         top_k(bns_allocator, dec_maker, simworkers, expelog)
 
-    bns_allocator = RandomAllocator(num_workers)
+    bns_allocator = RandomAllocator(num_workers, base_cost=base_cost, bns=bns)
     bns_allocator.set_parameters(p=0.5)
     dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm")
+    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
     with open('randomlog', 'w') as expelog:
         top_k(bns_allocator, dec_maker, simworkers, expelog)
 
-    bns_allocator = NStepAllocator(num_workers)
+    bns_allocator = NStepAllocator(num_workers, base_cost=base_cost, bns=bns)
     bns_allocator.set_parameters(numitr=500)
     dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm")
+    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
     with open('nsteplog', 'w') as expelog:
         top_k(bns_allocator, dec_maker, simworkers, expelog)
