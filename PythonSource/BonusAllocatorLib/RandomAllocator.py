@@ -14,6 +14,8 @@ class RandomAllocator(BonusAllocator):
         self.__probability = p   # probability of giving bonus
 
     def worker_evaluate(self, col_ans, spend, majority_vote):
+        for worker in self.hist_qlt_bns:
+            self.hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))
         print 'totally randomly allocate, do nothing to evaluate'
 
     def bonus_alloc(self):

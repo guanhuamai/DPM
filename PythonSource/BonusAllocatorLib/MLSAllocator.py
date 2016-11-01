@@ -7,13 +7,9 @@ import mdptoolbox
 
 class MLSAllocator(BonusAllocator):
 
-    def __init__(self, num_workers, len_seq=10, base_cost=5, bns=2, hist_qlt_bns=None):
+    def __init__(self, num_workers, len_seq=10, base_cost=5, bns=2):
         super(MLSAllocator, self).__init__(num_workers, base_cost, bns)
         print 'init an mls-mdp bonus allocator'
-        if hist_qlt_bns is None:
-            hist_qlt_bns = dict(zip(range(num_workers), [[] for _ in range(num_workers)]))
-
-        self.__hist_qlt_bns = hist_qlt_bns
 
         self.__len_seq = len_seq
 
@@ -37,7 +33,7 @@ class MLSAllocator(BonusAllocator):
 
     def set_parameters(self, nstates=3, ostates=2, strt_prob=None, numitr=1000, weights=None):
         if weights is None:
-            weights = [0, 1, 23]  # default value of the weights
+            weights = [0, 0.15, 0.0025]   # default value of the weights
 
         if strt_prob is None:
             strt_prob = [ 1.0 / nstates for _ in range(nstates)]
@@ -49,22 +45,22 @@ class MLSAllocator(BonusAllocator):
         self.__strt_prob = strt_prob
 
     def worker_evaluate(self, col_ans, spend, majority_vote):
-        for worker in self.__hist_qlt_bns:
-            self.__hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))
+        for worker in self.hist_qlt_bns:
+            self.hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))
 
         bonus_vec = [[0, 1], [1, 0]]
-        ou_obs = [[io_pairs[0] for io_pairs in self.__hist_qlt_bns[seqid]] for seqid in
-                  self.__hist_qlt_bns]  # output observations of every sequences
-        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in self.__hist_qlt_bns[seqid]]
-                  for seqid in self.__hist_qlt_bns]  # input observations of every sequences
+        ou_obs = [[io_pairs[0] for io_pairs in self.hist_qlt_bns[seqid]] for seqid in
+                  self.hist_qlt_bns]  # output observations of every sequences
+        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in self.hist_qlt_bns[seqid]]
+                  for seqid in self.hist_qlt_bns]  # input observations of every sequences
         model = self.__matlab_engine.iohmmTraining(ou_obs, in_obs, self.__nstates,
                                                               self.__ostates, self.__numitr)
-        in_obs = [[int(io_pairs[1] > self._base_cost) for io_pairs in self.__hist_qlt_bns[seqid]]
-                  for seqid in self.__hist_qlt_bns]  # input observations of every sequences
+        in_obs = [[int(io_pairs[1] > self._base_cost) for io_pairs in self.hist_qlt_bns[seqid]]
+                  for seqid in self.hist_qlt_bns]  # input observations of every sequences
         self.__tmat0 = list(model['A0'])
         self.__tmat1 = list(model['A1'])
         self.__emat  = list(model['B'])
-        self.__max_stas = [self.viterbi(in_obs[i], ou_obs[i], len(self.__hist_qlt_bns[i]))
+        self.__max_stas = [self.viterbi(in_obs[i], ou_obs[i], len(self.hist_qlt_bns[i]))
                            for i in range(self._num_workers)]
 
 
@@ -93,7 +89,7 @@ class MLSAllocator(BonusAllocator):
                             (self.__weights[1] - self.__weights[2]))
                            for i in range(self.__nstates)]) for k in range(self.__nstates)])
             R = np.transpose(np.array(R))
-            fh = mdptoolbox.mdp.FiniteHorizon(P, R, 0.99, self.__len_seq - (len(self.__hist_qlt_bns[i])
+            fh = mdptoolbox.mdp.FiniteHorizon(P, R, 0.99, self.__len_seq - (len(self.hist_qlt_bns[i])
                                                                             % self.__len_seq))
             fh.run()
             for worker_id in range(self._num_workers):

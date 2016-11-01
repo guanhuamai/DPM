@@ -382,7 +382,7 @@ def selection_process():
     for pair in Asked_Pairs:
         worker_k = random.choice(range(number_of_worker))
 
-        if Matrix[pair] > Matrix[(pair[1], pair[0])]:
+        if pair in Matrix:
             winner = pair[0]
             loser = pair[1]
         else:

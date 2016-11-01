@@ -6,13 +6,10 @@ import numpy as np
 
 class IOHMMBaseline(BonusAllocator):
 
-    def __init__(self, num_workers, base_cost=5, bns=2, hist_qlt_bns=None):
+    def __init__(self, num_workers, base_cost=5, bns=2):
         super(IOHMMBaseline, self).__init__(num_workers, base_cost, bns)
         print 'init an IOHMMBaseline bonus allocator'
-        if hist_qlt_bns is None:
-            hist_qlt_bns = dict(zip(range(num_workers), [[] for _ in range(num_workers)]))
 
-        self.__hist_qlt_bns = hist_qlt_bns
         self.__prfrm_mat = [[[], []] for _ in range(num_workers)]  # performance matrix
 
         self.__nstates = 0
@@ -37,14 +34,14 @@ class IOHMMBaseline(BonusAllocator):
         #   the last bit is the weight of the cost
 
     def worker_evaluate(self, col_ans, spend, majority_vote):
-        for worker in self.__hist_qlt_bns:
-            self.__hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))
+        for worker in self.hist_qlt_bns:
+            self.hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))
 
         bonus_vec = [[0, 1], [1, 0]]
-        ou_obs = [[io_pairs[0] for io_pairs in self.__hist_qlt_bns[seqid]] for seqid in
-                  self.__hist_qlt_bns]  # output observations of every sequences
-        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in self.__hist_qlt_bns[seqid]]
-                  for seqid in self.__hist_qlt_bns]  # input observations of every sequences
+        ou_obs = [[io_pairs[0] for io_pairs in self.hist_qlt_bns[seqid]] for seqid in
+                  self.hist_qlt_bns]  # output observations of every sequences
+        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in self.hist_qlt_bns[seqid]]
+                  for seqid in self.hist_qlt_bns]  # input observations of every sequences
         self.__prfrm_mat = self.__matlab_engine.iohmmTraining(ou_obs, in_obs, self.__nstates,
                                                               self.__ostates, self.__numitr)['result']
 
@@ -61,7 +58,7 @@ class IOHMMBaseline(BonusAllocator):
 
     def bonus_alloc(self):
         spend = []
-        for worker_id in self.__hist_qlt_bns:
+        for worker_id in self.hist_qlt_bns:
             exputl_true = self.__expect_util(worker_id, 1)  # expect utility if given certain bonus
             exputl_fals = self.__expect_util(worker_id, 0)  # expect utility if not given certain bonus
             spend.append(self._base_cost + (exputl_true > exputl_fals) * self._bns)
