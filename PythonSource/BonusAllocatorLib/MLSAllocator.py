@@ -19,10 +19,11 @@ class MLSAllocator(BonusAllocator):
         self.__tmat0 = None  # transition matrix with no bonus, shape = S * S, returned after training
         self.__tmat1 = None  # transiton matrix with bonus, shape = S * S, returned after training
         self.__emat  = None  # emission matrix, shpe = S * O, returned after training
+        self.__policy = None  # bonus policy
+        self.t = -1  # training cycle
 
         self.__numitr = 0
         self.__weights = None
-        self.__max_stas = None
 
         self.set_parameters()
         self.__matlab_engine = engine.start_matlab()
@@ -36,7 +37,7 @@ class MLSAllocator(BonusAllocator):
             weights = [0, 0.15, 0.0025]   # default value of the weights
 
         if strt_prob is None:
-            strt_prob = [ 1.0 / nstates for _ in range(nstates)]
+            strt_prob = [1.0 / nstates for _ in range(nstates)]
 
         self.__nstates = nstates   # number of hidden states
         self.__ostates = ostates   # number of observations
@@ -44,56 +45,71 @@ class MLSAllocator(BonusAllocator):
         self.__weights = weights   # utility weight of different performance and cost, bad: 0, good: 1, cost weight
         self.__strt_prob = strt_prob
 
-    def worker_evaluate(self, col_ans, spend, majority_vote):
-        for worker in self.hist_qlt_bns:
-            self.hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))
+    def train(self, train_data):
+        print 'train iohmm model'
 
         bonus_vec = [[0, 1], [1, 0]]
-        ou_obs = [[io_pairs[0] for io_pairs in self.hist_qlt_bns[seqid]] for seqid in
-                  self.hist_qlt_bns]  # output observations of every sequences
-        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in self.hist_qlt_bns[seqid]]
-                  for seqid in self.hist_qlt_bns]  # input observations of every sequences
+        ou_obs = [[io_pairs[0] for io_pairs in seq] for seq in train_data]  # output observations of every sequences
+        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in seq]
+                  for seq in train_data]  # input observations of every sequences
         model = self.__matlab_engine.iohmmTraining(ou_obs, in_obs, self.__nstates,
-                                                              self.__ostates, self.__numitr)
-        in_obs = [[int(io_pairs[1] > self._base_cost) for io_pairs in self.hist_qlt_bns[seqid]]
-                  for seqid in self.hist_qlt_bns]  # input observations of every sequences
+                                                   self.__ostates, self.__numitr)
         self.__tmat0 = list(model['A0'])
         self.__tmat1 = list(model['A1'])
-        self.__emat  = list(model['B'])
-        self.__max_stas = [self.viterbi(in_obs[i], ou_obs[i], len(self.hist_qlt_bns[i]))
-                           for i in range(self._num_workers)]
+        self.__emat = list(model['B'])
 
+        p = np.array([self.__tmat0, self.__tmat1])
+        r = list()
+        r.append([sum([self.__tmat0[k][i] *
+                       (self.__emat[i][0] * self.__weights[0] + self.__emat[i][1] * self.__weights[1])
+                       for i in range(self.__nstates)]) for k in range(self.__nstates)])
+        r.append([sum([self.__tmat1[k][i] *
+                       (self.__emat[i][0] * self.__weights[0] + self.__emat[i][1] *
+                        (self.__weights[1] - self.__weights[2]))
+                       for i in range(self.__nstates)]) for k in range(self.__nstates)])
+        r = np.transpose(np.array(r))
 
-    def viterbi(self, inobs, ouobs, T):  # tmats[0] transition matrix when not bonus
+        def mdp_policy(horizon):
+            fh = mdptoolbox.mdp.FiniteHorizon(p, r, 0.9, horizon)
+            fh.run()
+            return list(fh.policy)
+
+        self.__policy = map(mdp_policy, range(1, len(train_data[0]) + 1))
+        # print str(self.__policy)
+
+    def update(self, worker_ids, answers, spend, majority_vote, t):
+        for i in range(len(worker_ids)):
+            try:
+                self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
+            except KeyError:
+                self.hist_qlt_bns[worker_ids[i]] = []
+                self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
+
+        train_data = []  # workers whose history list is long enough to train new iohmm model
+        for worker in self.hist_qlt_bns:
+            if len(self.hist_qlt_bns[worker]) >= t:
+                train_data.append(self.hist_qlt_bns[worker][: t])  # cut off min_finish
+                self.hist_qlt_bns[worker] = self.hist_qlt_bns[worker][t:len(self.hist_qlt_bns[worker])]
+
+        if len(train_data) > 3:
+            self.train(train_data)
+
+    def __viterbi(self, in_obs, ou_obs):  # tmats[0] transition matrix when not bonus
         t_val = list()
-        t_val.append([self.__strt_prob[i] * self.__emat[i][ouobs[0]] for i in range(self.__nstates)])  # 1 * N
+        t_val.append([self.__strt_prob[i] * self.__emat[i][ou_obs[0]] for i in range(self.__nstates)])  # 1 * N
         tmats = (self.__tmat0, self.__tmat1)
-        for cur_t in range(1, T, 1):
+        for cur_t in range(1, len(in_obs), 1):
             t_val.append([])
             for j in range(self.__nstates):
-                tmp_val = [t_val[cur_t - 1][i] * tmats[inobs[cur_t]][i][j] * self.__emat[j][ouobs[cur_t]]
+                tmp_val = [t_val[cur_t - 1][i] * tmats[in_obs[cur_t]][i][j] * self.__emat[j][ou_obs[cur_t]]
                            for i in range(self.__nstates)]
                 t_val[cur_t].append(np.max(tmp_val))
+            t_val[cur_t] = [float(cur_v) / sum(t_val[cur_t]) for cur_v in t_val[cur_t]]
         return np.argmax(t_val[-1])
 
-    def bonus_alloc(self):
-        spend = []
-        if self.__max_stas is not None:
-            P = np.array([self.__tmat0, self.__tmat1])
-            R = []
-            R.append([sum([self.__tmat0[k][i] *
-                           (self.__emat[i][0] * self.__weights[0] + self.__emat[i][0] * self.__weights[1])
-                           for i in  range(self.__nstates)]) for k in range(self.__nstates)])
-            R.append([sum([self.__tmat0[k][i] *
-                           (self.__emat[i][0] * self.__weights[0] + self.__emat[i][0] *
-                            (self.__weights[1] - self.__weights[2]))
-                           for i in range(self.__nstates)]) for k in range(self.__nstates)])
-            R = np.transpose(np.array(R))
-            fh = mdptoolbox.mdp.FiniteHorizon(P, R, 0.99, self.__len_seq - (len(self.hist_qlt_bns[i])
-                                                                            % self.__len_seq))
-            fh.run()
-            for worker_id in range(self._num_workers):
-                spend.append(self._base_cost + (fh.policy[self.__max_stas[worker_id]][0]) * self._bns)
+    def bonus_alloc(self, in_obs, ou_obs):
+        if self.__policy is not None and in_obs is not None and ou_obs is not None:
+            tc = len(in_obs) % self.t
+            return self._base_cost + self._bns * self.__policy[self.t - tc - 1][self.__viterbi(in_obs, ou_obs)][0]
         else:
-            spend = map(lambda x: self._base_cost + (x == 1) * self._bns, np.random.choice(2, self._num_workers))
-        return spend
+            return self._base_cost + self._bns * np.random.choice(2, 1)[0]

@@ -46,7 +46,6 @@ class QLearningAllocator(BonusAllocator):
         self.__weights = weights   # utility weight of different performance and cost, bad: 0, good: 1, cost weight
         self.__len_seq = len_seq
 
-
     def worker_evaluate(self, col_ans, spend, majority_vote):
         for worker in self.hist_qlt_bns:
             self.hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))

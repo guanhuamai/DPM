@@ -86,7 +86,7 @@ class IOHmmWorkers(object):
         alphs = map(lambda ids: self.alph[ids], np.random.choice(len(self.p_alph), num_workers, p=self.p_alph))
         betas = map(lambda ids: self.alph[ids], np.random.choice(len(self.p_beta), num_workers, p=self.p_beta))
         self.situations = zip(alphs, betas)  # save alpha and beta parameter of a worker
-        self.z = np.random.choice(len(self.transition[0]), num_workers)
+        self.z = list(np.random.choice(len(self.transition[0]), num_workers))
 
     """
     update workers' hidden state in the next iteration
@@ -95,8 +95,8 @@ class IOHmmWorkers(object):
         #  bonus: a list of bonus with same size as workerIDs, indicate the bonus given to the workers
     """
     def _update_state(self, worker_ids, bns):  # update hidden state for all workers
-        self.z = [np.random.choice(len(self.transition[bns[i]]),  # number of hidden states
-                  1, p=self.transition[bns[i]][self.z[worker_ids[i]]])  # transition probability
+        self.z = [int(np.random.choice(len(self.transition[bns[i]]),  # number of hidden states
+                                   1, p=self.transition[bns[i]][self.z[worker_ids[i]]]))  # transition probability
                   for i in range(len(worker_ids))]
 
     """
@@ -110,7 +110,8 @@ class IOHmmWorkers(object):
     def work(self, worker_ids, bns):
         # emission probabilities: 1 / (1 + e ^ (-alphi - betai(at - rzt))  "bonus or not 4.2"
         probs = [1 / (1 + np.exp(-self.situations[idx][0] -
-                 self.situations[idx][1] * (bns[idx] - self.r[self.z[idx]]))) for idx in worker_ids]
+                 self.situations[idx][1] * (bns[idx] - self.r[self.z[idx]])))
+                 for idx in worker_ids]
 
         self._update_state(worker_ids, bns)  # update hidden state
         return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality

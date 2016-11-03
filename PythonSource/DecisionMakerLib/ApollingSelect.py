@@ -255,6 +255,9 @@ def max_entropy():
 
 
 def apolling_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
+    if len(ans_edges) * 2 + len(all_nodes) == len(all_edges):
+        return None
+
     'Preparation'
     global selected_edges, nodes, edges, M, BaseMatrix, last_score, Hessian, record_inv_matrix, record_current_matrix
     global left_edges, num_workers
@@ -292,9 +295,10 @@ def apolling_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
                 print 'success selected', edge
                 return edge
     except Exception:
+
         while True:
             edge = all_edges[np.random.choice(len(all_edges), 1)[0]]
             if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
                 print 'failed, randomly selected', edge
                 return edge
-    return -1, -1
+    return None

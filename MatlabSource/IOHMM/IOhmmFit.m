@@ -64,16 +64,16 @@ function model = IOhmmFit(data, inputObs, model, numiter)
     A1 = transitionMatrix(model.W, inputObs1, model);
     model.A0 = A0;
     model.A1 = A1;
-    A0 = A0 * model.B;
-    A1 = A1 * model.B;
+    %A0 = A0 * model.B;
+    %A1 = A1 * model.B;
     disp(model.B)
-    model.result = cell(1, size(inputObs, 2));
-    for i=1:size(inputObs, 2)
+    %model.result = cell(1, size(inputObs, 2));
+    %for i=1:size(inputObs, 2)
         %disp(alph{i})
-        model.result{i} = cell(1, 2);
-        model.result{i}{1} = alph{i}(:,end)' * A0;
-        model.result{i}{2} = alph{i}(:,end)' * A1;
-    end;
+        %model.result{i} = cell(1, 2);
+        %model.result{i}{1} = alph{i}(:,end)' * A0;
+        %model.result{i}{2} = alph{i}(:,end)' * A1;
+    %end;
 
     %figure, plot(ll);
     %disp(sum(cell2mat(loglikelihood)));

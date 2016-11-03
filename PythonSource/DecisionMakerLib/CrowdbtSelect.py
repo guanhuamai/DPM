@@ -412,12 +412,16 @@ def crowdbt_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
     # pnum_workers = 10
     # all_nodes, ans_edges, ans_matrix = mall_process.mall_process()
     # all_edges = [(nodeA, nodeB)for nodeA in all_nodes for nodeB in all_nodes]
+
+    if len(ans_edges) * 2 + len(all_nodes) == len(all_edges):
+        return None
     Initial_Process(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix)
     edge =  selection_process()
     if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
         print 'success selected', edge
         return edge
     else:
+
         while True:
             edge = all_edges[np.random.choice(len(all_edges), 1)[0]]
             if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:

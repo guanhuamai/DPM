@@ -33,7 +33,7 @@ class NStepAllocator(BonusAllocator):
 
     def set_parameters(self, nstates=3, ostates=2, strt_prob=None, numitr=1000, weights=None, nstep=5, len_seq=10):
         if weights is None:
-            weights = [0, 0.3, 0.002]  # default value of the weights
+            weights = [0, 0.15, 0.0025]  # default value of the weights
 
         if strt_prob is None:
             strt_prob = [ 1.0 / nstates for _ in range(nstates)]
@@ -46,33 +46,43 @@ class NStepAllocator(BonusAllocator):
         self.__nstep = nstep
         self.__len_seq = len_seq
 
-    def worker_evaluate(self, col_ans, spend, majority_vote):
-        for worker in self.hist_qlt_bns:
-            self.hist_qlt_bns[worker].append((int(col_ans[worker] == majority_vote), spend[worker]))
+    def train(self, train_data):
+        print 'train iohmm model'
 
         bonus_vec = [[0, 1], [1, 0]]
-        ou_obs = [[io_pairs[0] for io_pairs in self.hist_qlt_bns[seqid]] for seqid in
-                  self.hist_qlt_bns]  # output observations of every sequences
-        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in self.hist_qlt_bns[seqid]]
-                  for seqid in self.hist_qlt_bns]  # input observations of every sequences
+        ou_obs = [[io_pairs[0] for io_pairs in seq] for seq in train_data]  # output observations of every sequences
+        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in seq]
+                  for seq in train_data]  # input observations of every sequences
         model = self.__matlab_engine.iohmmTraining(ou_obs, in_obs, self.__nstates,
-                                                              self.__ostates, self.__numitr)
-        in_obs = [[int(io_pairs[1] > self._base_cost) for io_pairs in self.hist_qlt_bns[seqid]]
-                  for seqid in self.hist_qlt_bns]  # input observations of every sequences
+                                                   self.__ostates, self.__numitr)
         self.__tmat0 = list(model['A0'])
         self.__tmat1 = list(model['A1'])
         self.__emat = list(model['B'])
-        self.__belief = [self.viterbi(in_obs[i], ou_obs[i], len(self.hist_qlt_bns[i]))  # not standardized!
-                         for i in range(self._num_workers)]
 
-    def viterbi(self, inobs, ouobs, T):  # tmats[0] transition matrix when not bonus
+    def update(self, worker_ids, answers, spend, majority_vote, t):
+        for i in range(len(worker_ids)):
+            try:
+                self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
+            except KeyError:
+                self.hist_qlt_bns[worker_ids[i]] = []
+                self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
+
+        train_data = []  # workers whose history list is long enough to train new iohmm model
+        for worker in self.hist_qlt_bns:
+            if len(self.hist_qlt_bns[worker]) >= t:
+                train_data.append(self.hist_qlt_bns[worker][: t])  # cut off min_finish
+                self.hist_qlt_bns[worker] = self.hist_qlt_bns[worker][t:len(self.hist_qlt_bns[worker])]
+        if len(train_data) > 3:
+            self.train(train_data)
+
+    def viterbi(self, in_obs, ou_obs):  # tmats[0] transition matrix when not bonus
         t_val = list()
-        t_val.append([self.__strt_prob[i] * self.__emat[i][ouobs[0]] for i in range(self.__nstates)])  # 1 * N
+        t_val.append([self.__strt_prob[i] * self.__emat[i][ou_obs[0]] for i in range(self.__nstates)])  # 1 * N
         tmats = (self.__tmat0, self.__tmat1)
-        for cur_t in range(1, T, 1):
+        for cur_t in range(1, len(in_obs), 1):
             t_val.append([])
             for j in range(self.__nstates):
-                tmp_val = [t_val[cur_t - 1][i] * tmats[inobs[cur_t]][i][j] * self.__emat[j][ouobs[cur_t]]
+                tmp_val = [t_val[cur_t - 1][i] * tmats[in_obs[cur_t]][i][j] * self.__emat[j][ou_obs[cur_t]]
                            for i in range(self.__nstates)]  # from i to j
                 t_val[cur_t].append(sum(tmp_val))
         return t_val
@@ -113,13 +123,11 @@ class NStepAllocator(BonusAllocator):
         rslt += rewrd
         return rslt
 
-    def bonus_alloc(self):
-        spend = []
-        if self.__belief is not None:
-            for worker_id in range(self._num_workers):
-                exp0 = self.__exp_utility(self.__belief[worker_id][-1], 0, self.__nstep)
-                exp1 = self.__exp_utility(self.__belief[worker_id][-1], 1, self.__nstep)
-                spend.append(self._base_cost + (exp1 > exp0) * self._bns)
+    def bonus_alloc(self, in_obs, ou_obs):
+        if in_obs is not None and ou_obs is not None:
+            exp0 = self.__exp_utility(self.viterbi(in_obs, ou_obs), 0, self.__nstep)
+            exp1 = self.__exp_utility(self.viterbi(in_obs, ou_obs), 1, self.__nstep)
+            return self._base_cost + self._bns * int(exp1 > exp0)
         else:
-            spend = map(lambda x: self._base_cost + (x == 1) * self._bns, np.random.choice(2, self._num_workers))
-        return spend
+            return self._base_cost + self._bns * np.random.choice(2, 1)[0]
+
