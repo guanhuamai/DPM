@@ -46,8 +46,8 @@ def cal_precision_recall(rslt_seq, ground_truth, k):
             ti = tk.index(oi)
             tj = tk.index(oj)
             cnt_same += int(ai < aj and ti < tj)
-    precision = cnt_same / k * (k + 1) / 2.0
-    recall = len(ak_inter_tk) / float(k)
+    precision = float(cnt_same) / (k * (k + 1) / 2.0)
+    recall = float(len(ak_inter_tk)) / float(k)
     return precision, recall
 
 
