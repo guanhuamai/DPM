@@ -7,8 +7,8 @@ import mdptoolbox
 
 class MLSAllocator(BonusAllocator):
 
-    def __init__(self, num_workers, len_seq=10, base_cost=5, bns=2, t=10):
-        super(MLSAllocator, self).__init__(num_workers, base_cost, bns, t)
+    def __init__(self, num_workers, len_seq=10, base_cost=5, bns=2, t=10, weights=None):
+        super(MLSAllocator, self).__init__(num_workers, base_cost, bns, t, weights)
         print 'init an mls-mdp bonus allocator'
 
         self.__len_seq = len_seq
@@ -21,7 +21,6 @@ class MLSAllocator(BonusAllocator):
         self.__emat  = None  # emission matrix, shpe = S * O, returned after training
 
         self.__numitr = 0
-        self.__weights = None
         self.__policy = None  # bonus policy
 
         self.set_parameters()
@@ -31,17 +30,13 @@ class MLSAllocator(BonusAllocator):
     def __del__(self):
         self.__matlab_engine.quit()
 
-    def set_parameters(self, nstates=3, ostates=2, strt_prob=None, numitr=1000, weights=None):
-        if weights is None:
-            weights = [0, 0.15, 0.0025]   # default value of the weights
-
+    def set_parameters(self, nstates=3, ostates=2, strt_prob=None, numitr=1000):
         if strt_prob is None:
             strt_prob = [1.0 / nstates for _ in range(nstates)]
 
         self.__nstates = nstates   # number of hidden states
         self.__ostates = ostates   # number of observations
         self.__numitr = numitr     # number of iteration in EM algorithm
-        self.__weights = weights   # utility weight of different performance and cost, bad: 0, good: 1, cost weight
         self.__strt_prob = strt_prob
 
     def train(self, train_data):
@@ -60,11 +55,11 @@ class MLSAllocator(BonusAllocator):
         p = np.array([self.__tmat0, self.__tmat1])
         r = list()
         r.append([sum([self.__tmat0[k][i] *
-                       (self.__emat[i][0] * self.__weights[0] + self.__emat[i][1] * self.__weights[1])
+                       (self.__emat[i][0] * self.weights[0] + self.__emat[i][1] * self.weights[1])
                        for i in range(self.__nstates)]) for k in range(self.__nstates)])
         r.append([sum([self.__tmat1[k][i] *
-                       (self.__emat[i][0] * self.__weights[0] + self.__emat[i][1] *
-                        (self.__weights[1] - self.__weights[2]))
+                       (self.__emat[i][0] * self.weights[0] + self.__emat[i][1] *
+                        (self.weights[1] - self.weights[2]))
                        for i in range(self.__nstates)]) for k in range(self.__nstates)])
         r = np.transpose(np.array(r))
 

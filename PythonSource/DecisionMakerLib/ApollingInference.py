@@ -1,4 +1,5 @@
 import sys
+import copy
 sys.path.append("..")
 import random
 import math
@@ -37,7 +38,8 @@ def inference():
 
 def apolling_inference(all_nodes, all_edges, matrix):
     global nodes, edges, M
-    nodes, tmp_edges, M = all_nodes, all_edges, matrix
+    nodes, tmp_edges = all_nodes, all_edges
+    M = copy.deepcopy(matrix)
     edges = []
     for edge in tmp_edges:
         try:

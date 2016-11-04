@@ -1,3 +1,4 @@
+import copy
 import math
 from scipy.optimize import minimize
 global nodes, edges, Matrix
@@ -44,7 +45,8 @@ def optimization_crowdbt():
 
 def crowdbt_inference(allNodes, allEdges, matrix):
     global nodes, edges, Matrix
-    nodes, tmp_edges, Matrix = allNodes, allEdges, matrix
+    nodes, tmp_edges = allNodes, allEdges
+    Matrix = copy.deepcopy(matrix)
     edges = []
     for edge in tmp_edges:
         try:

@@ -1,45 +1,45 @@
 0.200000 percent:
-utility: 20.472500
+utility: 19.580000
 top3 precision: 0.000000
 top3 recall: 0.666667
 top4 precision: 0.000000
 top4 recall: 0.750000
 top5 precision: 0.000000
-top5 recall: 0.800000
+top5 recall: 1.000000
 -----------------i am a split line--------------------
 0.400000 percent:
-utility: 43.175000
+utility: 41.225000
 top3 precision: 0.000000
 top3 recall: 0.666667
 top4 precision: 0.000000
-top4 recall: 0.750000
+top4 recall: 0.500000
 top5 precision: 0.000000
 top5 recall: 0.800000
 -----------------i am a split line--------------------
 0.600000 percent:
-utility: 63.060000
+utility: 61.300000
 top3 precision: 0.000000
-top3 recall: 1.000000
+top3 recall: 0.666667
 top4 precision: 0.000000
 top4 recall: 0.750000
 top5 precision: 3.000000
 top5 recall: 1.000000
 -----------------i am a split line--------------------
 0.800000 percent:
-utility: 83.675000
+utility: 80.265000
 top3 precision: 0.000000
-top3 recall: 1.000000
-top4 precision: 2.500000
-top4 recall: 1.000000
+top3 recall: 0.666667
+top4 precision: 0.000000
+top4 recall: 0.750000
 top5 precision: 3.000000
 top5 recall: 1.000000
 -----------------i am a split line--------------------
 1.000000 percent:
-utility: 103.600000
-top3 precision: 0.000000
+utility: 100.150000
+top3 precision: 2.000000
 top3 recall: 1.000000
 top4 precision: 2.500000
 top4 recall: 1.000000
-top5 precision: 3.000000
+top5 precision: 6.000000
 top5 recall: 1.000000
 -----------------i am a split line--------------------
