@@ -6,8 +6,8 @@ import numpy as np
 
 class NStepAllocator(BonusAllocator):
 
-    def __init__(self, num_workers, nstep=5, len_seq=10, base_cost=5, bns=2):
-        super(NStepAllocator, self).__init__(num_workers, base_cost, bns)
+    def __init__(self, num_workers, nstep=5, len_seq=10, base_cost=5, bns=2, t=10):
+        super(NStepAllocator, self).__init__(num_workers, base_cost, bns, t)
         print 'init an nstep look ahead bonus allocator'
         
         self.__nstep = nstep
@@ -22,7 +22,6 @@ class NStepAllocator(BonusAllocator):
 
         self.__numitr = 0
         self.__weights = None
-        self.__belief = None
 
         self.set_parameters()
         self.__matlab_engine = engine.start_matlab()
@@ -70,12 +69,13 @@ class NStepAllocator(BonusAllocator):
         train_data = []  # workers whose history list is long enough to train new iohmm model
         for worker in self.hist_qlt_bns:
             if len(self.hist_qlt_bns[worker]) >= t:
+                # train_data.append(self.hist_qlt_bns[worker])
                 train_data.append(self.hist_qlt_bns[worker][: t])  # cut off min_finish
                 self.hist_qlt_bns[worker] = self.hist_qlt_bns[worker][t:len(self.hist_qlt_bns[worker])]
         if len(train_data) > 3:
             self.train(train_data)
 
-    def viterbi(self, in_obs, ou_obs):  # tmats[0] transition matrix when not bonus
+    def __viterbi(self, in_obs, ou_obs):  # tmats[0] transition matrix when not bonus
         t_val = list()
         t_val.append([self.__strt_prob[i] * self.__emat[i][ou_obs[0]] for i in range(self.__nstates)])  # 1 * N
         tmats = (self.__tmat0, self.__tmat1)
@@ -85,7 +85,8 @@ class NStepAllocator(BonusAllocator):
                 tmp_val = [t_val[cur_t - 1][i] * tmats[in_obs[cur_t]][i][j] * self.__emat[j][ou_obs[cur_t]]
                            for i in range(self.__nstates)]  # from i to j
                 t_val[cur_t].append(sum(tmp_val))
-        return t_val
+            t_val[cur_t] = [float(cur_v) / sum(t_val[cur_t]) for cur_v in t_val[cur_t]]
+        return t_val[-1]
 
     def __cal_reward(self, belief, is_bonus):
         trans_mat = [self.__tmat0, self.__tmat1]
@@ -97,8 +98,10 @@ class NStepAllocator(BonusAllocator):
 
     def __cal_belief(self, belief, is_bonus, obs):
         trans_mat = [self.__tmat0, self.__tmat1]
-        return [sum([belief[i] * trans_mat[is_bonus][i][j] * self.__emat[j][obs] for i in range(self.__nstates)])
+        new_belief = [sum([belief[i] * trans_mat[is_bonus][i][j] * self.__emat[j][obs] for i in range(self.__nstates)])
                 for j in range(self.__nstates)]
+        new_belief = [new_b / sum(new_belief) for new_b in new_belief]  # normalize
+        return new_belief
 
     def __exp_utility(self, belief, a, nstep):
         trans_mat = [self.__tmat0, self.__tmat1]
@@ -114,19 +117,23 @@ class NStepAllocator(BonusAllocator):
                     state_exp += trans_mat[a][i][j] * self.__emat[j][x]
                 sum_state_exp += belief[i] * state_exp
 
+
+            new_belief = self.__cal_belief(belief, a, x)
             # expected utility when no given bonus
-            expt_util0 = self.__exp_utility(self.__cal_belief(belief, 0, x), 0, nstep-1)
+            expt_util0 = self.__exp_utility(new_belief, 0, nstep-1)
             # expected utility when given bonus
-            expt_util1 = self.__exp_utility(self.__cal_belief(belief, 1, x), 1, nstep-1)
+            expt_util1 = self.__exp_utility(new_belief, 1, nstep-1)
             v_val = max(expt_util0, expt_util1)
             rslt += sum_state_exp * v_val
         rslt += rewrd
         return rslt
 
     def bonus_alloc(self, in_obs, ou_obs):
-        if in_obs is not None and ou_obs is not None:
-            exp0 = self.__exp_utility(self.viterbi(in_obs, ou_obs), 0, self.__nstep)
-            exp1 = self.__exp_utility(self.viterbi(in_obs, ou_obs), 1, self.__nstep)
+        if self.__emat is not None and in_obs is not None and ou_obs is not None:
+            states = self.__viterbi(in_obs, ou_obs)
+            # print states
+            exp0 = self.__exp_utility(states, 0, self.__nstep)
+            exp1 = self.__exp_utility(states, 1, self.__nstep)
             return self._base_cost + self._bns * int(exp1 > exp0)
         else:
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]

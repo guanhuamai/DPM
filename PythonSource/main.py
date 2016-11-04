@@ -68,7 +68,7 @@ def top_k(base_cost, bns, bonus_allocator, decision_maker, workers, runlog):
 
             decision_maker.update(cmp_pair, answers)
             bonus_allocator.update(workers.available_workers(), answers,
-                                   spend, majority_vote, 10)  # train new iohmm model to evaluate workers
+                                   spend, majority_vote)  # train new iohmm model to evaluate workers
 
         if (len(matrix) / 2) % num_periter == 0:
             print 'write log at %lf' %(len(matrix) / float((len(decision_maker.all_edges)
@@ -82,13 +82,14 @@ if __name__ == '__main__':
     num_workers = 20
     base_cost = 5
     bns = 2
+    t = 10
 
-    bns_allocator = MLSAllocator(num_workers, base_cost=base_cost, bns=bns)
-    bns_allocator.set_parameters(numitr=500)
-    dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
-    with open('mlslog', 'w') as expelog:
-        top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)
+    # bns_allocator = MLSAllocator(num_workers, base_cost=base_cost, bns=bns)
+    # bns_allocator.set_parameters(numitr=500)
+    # dec_maker = Crowdbt(num_workers, num_nd)
+    # simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
+    # with open('mlslog', 'w') as expelog:
+    #     top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)
 
 
     # bns_allocator = IOHMMBaseline(num_workers, base_cost=base_cost, bns=bns)
@@ -98,12 +99,12 @@ if __name__ == '__main__':
     # with open('baselinelog', 'w') as expelog:
     #     top_k(bns_allocator, dec_maker, simworkers, expelog)
     #
-    # bns_allocator = QLearningAllocator(num_workers, base_cost=base_cost, bns=bns)
-    # bns_allocator.set_parameters(numitr=500)
-    # dec_maker = Crowdbt(num_workers, num_nd)
-    # simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
-    # with open('qlearnlog', 'w') as expelog:
-    #     top_k(bns_allocator, dec_maker, simworkers, expelog)
+    bns_allocator = QLearningAllocator(num_workers, base_cost=base_cost, bns=bns, t=t)
+    bns_allocator.set_parameters(numitr=500)
+    dec_maker = Crowdbt(num_workers, num_nd)
+    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
+    with open('qlearnlog', 'w') as expelog:
+        top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)
     #
     # bns_allocator = RandomAllocator(num_workers, base_cost=base_cost, bns=bns)
     # bns_allocator.set_parameters(p=0.5)
@@ -117,4 +118,4 @@ if __name__ == '__main__':
     # dec_maker = Crowdbt(num_workers, num_nd)
     # simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
     # with open('nsteplog', 'w') as expelog:
-    #     top_k(bns_allocator, dec_maker, simworkers, expelog)
+    #     top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)

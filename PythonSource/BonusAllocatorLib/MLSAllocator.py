@@ -7,8 +7,8 @@ import mdptoolbox
 
 class MLSAllocator(BonusAllocator):
 
-    def __init__(self, num_workers, len_seq=10, base_cost=5, bns=2):
-        super(MLSAllocator, self).__init__(num_workers, base_cost, bns)
+    def __init__(self, num_workers, len_seq=10, base_cost=5, bns=2, t=10):
+        super(MLSAllocator, self).__init__(num_workers, base_cost, bns, t)
         print 'init an mls-mdp bonus allocator'
 
         self.__len_seq = len_seq
@@ -19,11 +19,10 @@ class MLSAllocator(BonusAllocator):
         self.__tmat0 = None  # transition matrix with no bonus, shape = S * S, returned after training
         self.__tmat1 = None  # transiton matrix with bonus, shape = S * S, returned after training
         self.__emat  = None  # emission matrix, shpe = S * O, returned after training
-        self.__policy = None  # bonus policy
-        self.t = -1  # training cycle
 
         self.__numitr = 0
         self.__weights = None
+        self.__policy = None  # bonus policy
 
         self.set_parameters()
         self.__matlab_engine = engine.start_matlab()
@@ -77,7 +76,7 @@ class MLSAllocator(BonusAllocator):
         self.__policy = map(mdp_policy, range(1, len(train_data[0]) + 1))
         # print str(self.__policy)
 
-    def update(self, worker_ids, answers, spend, majority_vote, t):
+    def update(self, worker_ids, answers, spend, majority_vote):
         for i in range(len(worker_ids)):
             try:
                 self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
@@ -87,9 +86,9 @@ class MLSAllocator(BonusAllocator):
 
         train_data = []  # workers whose history list is long enough to train new iohmm model
         for worker in self.hist_qlt_bns:
-            if len(self.hist_qlt_bns[worker]) >= t:
-                train_data.append(self.hist_qlt_bns[worker][: t])  # cut off min_finish
-                self.hist_qlt_bns[worker] = self.hist_qlt_bns[worker][t:len(self.hist_qlt_bns[worker])]
+            if len(self.hist_qlt_bns[worker]) >= self._t:
+                train_data.append(self.hist_qlt_bns[worker][: self._t])  # cut off min_finish
+                self.hist_qlt_bns[worker] = self.hist_qlt_bns[worker][self._t:len(self.hist_qlt_bns[worker])]
 
         if len(train_data) > 3:
             self.train(train_data)
@@ -109,7 +108,7 @@ class MLSAllocator(BonusAllocator):
 
     def bonus_alloc(self, in_obs, ou_obs):
         if self.__policy is not None and in_obs is not None and ou_obs is not None:
-            tc = len(in_obs) % self.t
-            return self._base_cost + self._bns * self.__policy[self.t - tc - 1][self.__viterbi(in_obs, ou_obs)][0]
+            tc = len(in_obs) % self._t
+            return self._base_cost + self._bns * self.__policy[self._t - tc - 1][self.__viterbi(in_obs, ou_obs)][0]
         else:
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]
