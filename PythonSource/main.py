@@ -1,9 +1,11 @@
+import time
 from BonusAllocatorLib.MLSAllocator import MLSAllocator
 from BonusAllocatorLib.IOHMMBaseline import IOHMMBaseline
 from BonusAllocatorLib.QLearningAllocator import QLearningAllocator
 from BonusAllocatorLib.NStepAllocator import NStepAllocator
 from BonusAllocatorLib.RandomAllocator import RandomAllocator
 from DecisionMakerLib.Crowdbt import Crowdbt
+from DecisionMakerLib.Apolling import Apolling
 from Workers import SimulationWorkers
 
 
@@ -51,11 +53,15 @@ def cal_precision_recall(rslt_seq, ground_truth, k):
     return precision, recall
 
 
-def top_k(base_cost, bns, bonus_allocator, decision_maker, workers, runlog):
+def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
+    rslts = list()
+
     hist_qlt_bns = {}  # note down all workers history, each history is a list of tuples. tuple = (quality, bns)
     matrix = {} # note down all votes, shape = num_nodes * num_nodes
 
     num_periter = ((len(decision_maker.all_edges) - len(decision_maker.all_nodes)) / 2) / 5
+
+    time_strt = time.time()
 
     while (len(decision_maker.matrix) + len(decision_maker.all_nodes)) < len(decision_maker.all_edges):
 
@@ -93,8 +99,8 @@ def top_k(base_cost, bns, bonus_allocator, decision_maker, workers, runlog):
                                    spend, majority_vote)  # train new iohmm model to evaluate workers
 
         if (len(matrix) / 2) % num_periter == 0:
-            percent = len(matrix) / float((len(decision_maker.all_edges) - len(decision_maker.all_nodes)))
-            print 'write log at %lf' %percent
+            selection_rate = len(matrix) / float((len(decision_maker.all_edges) - len(decision_maker.all_nodes)))
+            print 'write log at %lf' %selection_rate
 
             rslt_seq = decision_maker.result_inference()
 
@@ -108,18 +114,20 @@ def top_k(base_cost, bns, bonus_allocator, decision_maker, workers, runlog):
                    bonus_allocator.weights[1] * num_correct_ans -\
                    bonus_allocator.weights[2] * (cost - base_cost * num_total_ans) / bns
 
-            precision_recall = map(lambda k: cal_precision_recall(rslt_seq, range(len(decision_maker.all_nodes)), k),
-                                   range(3, 6))  # k varies in 3, 4, 5
+            time_end = time.time()
+            time_spend = time_end - time_strt
 
-            runlog.write('%lf percent:\n' %percent)
-            runlog.write('utility: %lf\n' %util)
-            runlog.write('top3 precision: %lf\n' %precision_recall[0][0])
-            runlog.write('top3 recall: %lf\n' %precision_recall[0][1])
-            runlog.write('top4 precision: %lf\n' %precision_recall[1][0])
-            runlog.write('top4 recall: %lf\n' %precision_recall[1][1])
-            runlog.write('top5 precision: %lf\n' %precision_recall[2][0])
-            runlog.write('top5 recall: %lf\n' %precision_recall[2][1])
-            runlog.write('-----------------i am a split line--------------------\n')
+            for k in range(2, 11, 2):
+                name_worker_model = type(workers).__name__
+                name_allocator_model = type(bonus_allocator).__name__
+                name_decmaker_model = type(decision_maker).__name__
+                precision_recall = cal_precision_recall(rslt_seq, range(len(decision_maker.all_nodes)), k)
+                rslts.append((name_worker_model, name_allocator_model, name_decmaker_model,
+                              selection_rate, k, cost, util, precision_recall[0], precision_recall[1],
+                              time_spend))
+    return rslts
+
+
 
 
 if __name__ == '__main__':
@@ -130,37 +138,31 @@ if __name__ == '__main__':
     bns = 2
     t = 10
 
-    bns_allocator = MLSAllocator(num_workers, base_cost=base_cost, bns=bns, t=t)
-    bns_allocator.set_parameters(numitr=500)
-    dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
-    with open('mlslog', 'w') as expelog:
-        top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)
+    worker_models = list()     # 3 worker models: uniform distribution, beta distribution, iohmm distribution
+    bonus_allocators = list()  # 5 bonus models(actually 7): baseline, mls-mdp, nstep-lookahead, qlearning
+    decision_makers = list()   # 2 decision models: apolling, crowdbt
+    num_questions = num_nd     # set to be 10 for now
 
-    bns_allocator = IOHMMBaseline(num_workers, base_cost=base_cost, bns=bns, t=t)
-    bns_allocator.set_parameters(numitr=500)
-    dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
-    with open('baselinelog', 'w') as expelog:
-        top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)
+    worker_models = [lambda:SimulationWorkers(num_workers, "uniform", base_cost=base_cost, bns=bns),
+                     lambda:SimulationWorkers(num_workers, "beta", base_cost=base_cost, bns=bns),
+                     lambda:SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)]
+    bonus_allocators = [lambda:IOHMMBaseline(num_workers, base_cost=base_cost, bns=bns, t=t),
+                        lambda:MLSAllocator(num_workers, base_cost=base_cost, bns=bns, t=t),
+                        lambda:NStepAllocator(num_workers, base_cost=base_cost, bns=bns, t=t),
+                        lambda:QLearningAllocator(num_workers, base_cost=base_cost, bns=bns, t=t),
+                        lambda:RandomAllocator(num_workers, base_cost=base_cost, bns=bns, t=t)]
+    decision_makers = [lambda:Crowdbt(num_workers, num_nd),
+                       lambda:Apolling(num_workers, num_nd)]
 
-    bns_allocator = QLearningAllocator(num_workers, base_cost=base_cost, bns=bns, t=t)
-    bns_allocator.set_parameters(numitr=500)
-    dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
-    with open('qlearnlog', 'w') as expelog:
-        top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)
-
-    bns_allocator = RandomAllocator(num_workers, base_cost=base_cost, bns=bns, t=t)
-    bns_allocator.set_parameters(p=0.5)
-    dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
-    with open('randomlog', 'w') as expelog:
-        top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)
-
-    bns_allocator = NStepAllocator(num_workers, base_cost=base_cost, bns=bns, t=t)
-    bns_allocator.set_parameters(numitr=500)
-    dec_maker = Crowdbt(num_workers, num_nd)
-    simworkers = SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)
-    with open('nsteplog', 'w') as expelog:
-        top_k(base_cost, bns, bns_allocator, dec_maker, simworkers, expelog)
+    with open('rslt log', 'w') as log_file:
+        for i in range(1):
+            for j in range(1):
+                for m in range(1):
+        # for i in range(len(worker_models)):
+        #     for j in range(len(bonus_allocators)):
+        #         for m in range(len(decision_makers)):
+                    rslts = do_experiment(worker_models[i](), bonus_allocators[j](),
+                                          decision_makers(m)(), base_cost, bns)
+                    for rslt in rslts:
+                        str_rslt = reduce(lambda x, y: str(x) + '\t' + str(y), rslt)
+                        log_file.write(str_rslt + '\n')
