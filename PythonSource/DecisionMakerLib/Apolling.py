@@ -8,8 +8,7 @@ class Apolling(DecisionMaker):
     def __init__(self, nu_workers, nu_nodes):
         super(Apolling, self).__init__(nu_workers, nu_nodes)
         print 'init an apolling engine'
-        self.__used_edges = []
-
+        self.used_edges = []
 
     def update(self, cmp_pair=None, col_ans=None):
         # update answer matrix with answers, votes statistics
@@ -24,10 +23,10 @@ class Apolling(DecisionMaker):
                     self.matrix[tmp_pair] = 1
 
         # update usedEdges with answers
-        self.__used_edges.append(cmp_pair)
+        self.used_edges.append(cmp_pair)
 
     def pair_selection(self):
-        return apolling_select(self.num_workers, self.all_nodes, self.all_edges, self.__used_edges, self.matrix)
+        return apolling_select(self.num_workers, self.all_nodes, self.all_edges, self.used_edges, self.matrix)
 
     def result_inference(self):
         return apolling_inference(self.all_nodes, self.all_edges, self.matrix)

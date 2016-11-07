@@ -8,7 +8,7 @@ class Crowdbt(DecisionMaker):
     def __init__(self, nu_workers, nu_nodes):
         super(Crowdbt, self).__init__(nu_workers, nu_nodes)
         print 'init a crowdbt engine'
-        self.__used_edges = []
+        self.used_edges = []
         self.matrix = {}
 
     def update(self, cmp_pair=None, col_ans=None):
@@ -24,10 +24,10 @@ class Crowdbt(DecisionMaker):
                     self.matrix[tmp_pair] = 1
 
         # update usedEdges with answers
-        self.__used_edges.append(cmp_pair)
+        self.used_edges.append(cmp_pair)
 
     def pair_selection(self):
-        return crowdbt_select(self.num_workers, self.all_nodes, self.all_edges, self.__used_edges, self.matrix)
+        return crowdbt_select(self.num_workers, self.all_nodes, self.all_edges, self.used_edges, self.matrix)
 
     def result_inference(self):
         return crowdbt_inference(self.all_nodes, self.all_edges, self.matrix)

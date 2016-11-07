@@ -33,6 +33,7 @@ def update_answers(matrix, cmp_pair, answers):
         except KeyError:
             matrix[tmp_pair] = 1
 
+
 def cal_precision_recall(rslt_seq, ground_truth, k):
     ak = rslt_seq[:k]  # crowds' top k answers
     tk = ground_truth[:k]  # ground truth of top k answers
@@ -62,12 +63,43 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
     num_periter = ((len(decision_maker.all_edges) - len(decision_maker.all_nodes)) / 2) / 5
 
     time_strt = time.time()
+    cost = 0
+    cmp_pair = (-1, -1)
 
-    while (len(decision_maker.matrix) + len(decision_maker.all_nodes)) < len(decision_maker.all_edges):
+    def record_result():
+        selection_rate = len(decision_maker.used_edges) * 2 / float((len(decision_maker.all_edges) -
+                                                                     len(decision_maker.all_nodes)))
+        print 'write log at %lf' % selection_rate
+
+        rslt_seq = decision_maker.result_inference()
+
+        num_correct_ans = 0
+        num_total_ans = 0
+        for _cmp_pair in matrix:
+            num_total_ans += matrix[_cmp_pair]
+            if _cmp_pair[0] < _cmp_pair[1]:
+                num_correct_ans += matrix[_cmp_pair]
+        util = bonus_allocator.weights[0] * (num_total_ans - num_correct_ans) + \
+               bonus_allocator.weights[1] * num_correct_ans - \
+               bonus_allocator.weights[2] * (cost - base_cost * num_total_ans) / bns
+
+        time_end = time.time()
+        time_spend = time_end - time_strt
+
+        for k in range(2, 11, 2):
+            name_worker_model = type(workers).__name__
+            name_allocator_model = type(bonus_allocator).__name__
+            name_decmaker_model = type(decision_maker).__name__
+            precision_recall = cal_precision_recall(rslt_seq, range(len(decision_maker.all_nodes)), k)
+            rslts.append((name_worker_model, name_allocator_model, name_decmaker_model,
+                          selection_rate, k, cost, util, precision_recall[0], precision_recall[1],
+                          time_spend))
+
+    while cmp_pair is not None:
+        if (len(decision_maker.used_edges)) % num_periter == 0 and len(matrix) != 0:
+            record_result()
 
         cmp_pair = decision_maker.pair_selection()  # choose a question pair for publishing
-
-        cost = 0
 
         if cmp_pair is not None:
 
@@ -82,7 +114,7 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
                 except KeyError:
                     spend.append(bonus_allocator.bonus_alloc(None, None))
 
-            print 'cost: %d\n' %sum(spend)
+            print 'spend: %d\n' % sum(spend)
             cost += sum(spend)
 
             workers.publish_questions(workers.available_workers(), cmp_pair, spend)  # publish questions to workers
@@ -97,38 +129,9 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
             decision_maker.update(cmp_pair, answers)
             bonus_allocator.update(workers.available_workers(), answers,
                                    spend, majority_vote)  # train new iohmm model to evaluate workers
+    record_result()
 
-        if (len(matrix) / 2) % num_periter == 0:
-            selection_rate = len(matrix) / float((len(decision_maker.all_edges) - len(decision_maker.all_nodes)))
-            print 'write log at %lf' %selection_rate
-
-            rslt_seq = decision_maker.result_inference()
-
-            num_correct_ans = 0
-            num_total_ans = 0
-            for _cmp_pair in matrix:
-                num_total_ans += matrix[_cmp_pair]
-                if _cmp_pair[0] < _cmp_pair[1]:
-                    num_correct_ans += matrix[_cmp_pair]
-            util = bonus_allocator.weights[0] * (num_total_ans - num_correct_ans) + \
-                   bonus_allocator.weights[1] * num_correct_ans -\
-                   bonus_allocator.weights[2] * (cost - base_cost * num_total_ans) / bns
-
-            time_end = time.time()
-            time_spend = time_end - time_strt
-
-            for k in range(2, 11, 2):
-                name_worker_model = type(workers).__name__
-                name_allocator_model = type(bonus_allocator).__name__
-                name_decmaker_model = type(decision_maker).__name__
-                precision_recall = cal_precision_recall(rslt_seq, range(len(decision_maker.all_nodes)), k)
-                rslts.append((name_worker_model, name_allocator_model, name_decmaker_model,
-                              selection_rate, k, cost, util, precision_recall[0], precision_recall[1],
-                              time_spend))
     return rslts
-
-
-
 
 if __name__ == '__main__':
 
@@ -155,14 +158,14 @@ if __name__ == '__main__':
                        lambda:Apolling(num_workers, num_nd)]
 
     with open('rslt log', 'w') as log_file:
-        for i in range(1):
-            for j in range(1):
-                for m in range(1):
-        # for i in range(len(worker_models)):
-        #     for j in range(len(bonus_allocators)):
-        #         for m in range(len(decision_makers)):
-                    rslts = do_experiment(worker_models[i](), bonus_allocators[j](),
-                                          decision_makers(m)(), base_cost, bns)
+        for i in range(len(worker_models)):
+            for j in range(len(bonus_allocators)):
+                for m in range(len(decision_makers)):
+                    rslts = do_experiment(worker_models[i](), bonus_allocators[4](),
+                                          decision_makers[m](), base_cost, bns)
+
+                    log_file.write('WorkerType\tBonusType\tSelect&InferenceType\tSelectionRate\t'
+                                   'K\tTotalCost\tUtility\tPrecision\tRecall\tTimeSpend\n')
                     for rslt in rslts:
                         str_rslt = reduce(lambda x, y: str(x) + '\t' + str(y), rslt)
                         log_file.write(str_rslt + '\n')
