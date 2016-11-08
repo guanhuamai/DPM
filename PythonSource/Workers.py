@@ -45,6 +45,8 @@ class UniformWorkers(SimulationWorkers):
     def __init__(self, num_workers, base_cost=5, bns=2):
         super(UniformWorkers, self).__init__(num_workers, base_cost=base_cost, bns=bns)
 
+        print 'init uniform worker model'
+
         self.behaviour = 'uniform'
         self.accMatrix = []  # 2 * 2 accurate matrix, row: bonus, not bonus, column: type 0, type 1
         self.accMatrix.append([0.5, 0.8])  # accuracy not  given bonus
@@ -74,6 +76,8 @@ class BetaWorkers(SimulationWorkers):
     """
     def __init__(self, num_workers, base_cost=5, bns=2):
         super(BetaWorkers, self).__init__(num_workers, base_cost=base_cost, bns=bns)
+
+        print 'init beta worker model'
 
         self.behaviour = 'beta'
         self.accMatrix = zip(np.random.beta(2, 2, num_workers), np.random.beta(6, 2, num_workers))
@@ -106,6 +110,8 @@ class IOHmmWorkers(SimulationWorkers):
     """
     def __init__(self, num_workers, base_cost=5, bns=2):
         super(IOHmmWorkers, self).__init__(num_workers, base_cost=base_cost, bns=bns)
+
+        print 'init iohmm worker model'
 
         self.behaviour = 'iohmm'
 
