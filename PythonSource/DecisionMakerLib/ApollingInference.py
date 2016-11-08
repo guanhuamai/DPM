@@ -48,4 +48,4 @@ def apolling_inference(all_nodes, all_edges, matrix):
         except KeyError:
             M[edge] = 0
 
-    inference()
+    return inference()

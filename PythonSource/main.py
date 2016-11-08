@@ -6,7 +6,9 @@ from BonusAllocatorLib.NStepAllocator import NStepAllocator
 from BonusAllocatorLib.RandomAllocator import RandomAllocator
 from DecisionMakerLib.Crowdbt import Crowdbt
 from DecisionMakerLib.Apolling import Apolling
-from Workers import SimulationWorkers
+from Workers import UniformWorkers
+from Workers import BetaWorkers
+from Workers import IOHmmWorkers
 
 
 def get_majority(answers):
@@ -37,7 +39,7 @@ def update_answers(matrix, cmp_pair, answers):
 def cal_precision_recall(rslt_seq, ground_truth, k):
     ak = rslt_seq[:k]  # crowds' top k answers
     tk = ground_truth[:k]  # ground truth of top k answers
-    ak_inter_tk = filter(lambda t: t in ak, tk)
+    ak_inter_tk = filter(lambda t_a: t_a in ak, tk)
 
     cnt_same = 0
     for oi in ak_inter_tk:
@@ -58,7 +60,7 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
     rslts = list()
 
     hist_qlt_bns = {}  # note down all workers history, each history is a list of tuples. tuple = (quality, bns)
-    matrix = {} # note down all votes, shape = num_nodes * num_nodes
+    matrix = {}  # note down all votes, shape = num_nodes * num_nodes
 
     num_periter = ((len(decision_maker.all_edges) - len(decision_maker.all_nodes)) / 2) / 5
 
@@ -80,8 +82,8 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
             if _cmp_pair[0] < _cmp_pair[1]:
                 num_correct_ans += matrix[_cmp_pair]
         util = bonus_allocator.weights[0] * (num_total_ans - num_correct_ans) + \
-               bonus_allocator.weights[1] * num_correct_ans - \
-               bonus_allocator.weights[2] * (cost - base_cost * num_total_ans) / bns
+            bonus_allocator.weights[1] * num_correct_ans - \
+            bonus_allocator.weights[2] * (cost - base_cost * num_total_ans) / bns
 
         time_end = time.time()
         time_spend = time_end - time_strt
@@ -129,16 +131,14 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
             decision_maker.update(cmp_pair, answers)
             bonus_allocator.update(workers.available_workers(), answers,
                                    spend, majority_vote)  # train new iohmm model to evaluate workers
-    record_result()
-
     return rslts
 
 if __name__ == '__main__':
 
     num_nd = 10
     num_workers = 20
-    base_cost = 5
-    bns = 2
+    base_costs = 5
+    bonus = 2
     t = 10
 
     worker_models = list()     # 3 worker models: uniform distribution, beta distribution, iohmm distribution
@@ -146,26 +146,25 @@ if __name__ == '__main__':
     decision_makers = list()   # 2 decision models: apolling, crowdbt
     num_questions = num_nd     # set to be 10 for now
 
-    worker_models = [lambda:SimulationWorkers(num_workers, "uniform", base_cost=base_cost, bns=bns),
-                     lambda:SimulationWorkers(num_workers, "beta", base_cost=base_cost, bns=bns),
-                     lambda:SimulationWorkers(num_workers, "iohmm", base_cost=base_cost, bns=bns)]
-    bonus_allocators = [lambda:IOHMMBaseline(num_workers, base_cost=base_cost, bns=bns, t=t),
-                        lambda:MLSAllocator(num_workers, base_cost=base_cost, bns=bns, t=t),
-                        lambda:NStepAllocator(num_workers, base_cost=base_cost, bns=bns, t=t),
-                        lambda:QLearningAllocator(num_workers, base_cost=base_cost, bns=bns, t=t),
-                        lambda:RandomAllocator(num_workers, base_cost=base_cost, bns=bns, t=t)]
+    worker_models = [lambda:UniformWorkers(num_workers, base_cost=base_costs, bns=bonus),
+                     lambda:BetaWorkers(num_workers, base_cost=base_costs, bns=bonus),
+                     lambda:IOHmmWorkers(num_workers, base_cost=base_costs, bns=bonus)]
+    bonus_allocators = [lambda:IOHMMBaseline(num_workers, base_cost=base_costs, bns=bonus, t=t),
+                        lambda:MLSAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t),
+                        lambda:NStepAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t),
+                        lambda:QLearningAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t),
+                        lambda:RandomAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t)]
     decision_makers = [lambda:Crowdbt(num_workers, num_nd),
                        lambda:Apolling(num_workers, num_nd)]
 
     with open('rslt log', 'w') as log_file:
+        log_file.write('WorkerType\tBonusType\tSelect&InferenceType\tSelectionRate\t'
+                       'K\tTotalCost\tUtility\tPrecision\tRecall\tTimeSpend\n')
         for i in range(len(worker_models)):
             for j in range(len(bonus_allocators)):
                 for m in range(len(decision_makers)):
-                    rslts = do_experiment(worker_models[i](), bonus_allocators[4](),
-                                          decision_makers[m](), base_cost, bns)
-
-                    log_file.write('WorkerType\tBonusType\tSelect&InferenceType\tSelectionRate\t'
-                                   'K\tTotalCost\tUtility\tPrecision\tRecall\tTimeSpend\n')
-                    for rslt in rslts:
+                    results = do_experiment(worker_models[i](), bonus_allocators[4](),
+                                            decision_makers[m](), base_costs, bonus)
+                    for rslt in results:
                         str_rslt = reduce(lambda x, y: str(x) + '\t' + str(y), rslt)
                         log_file.write(str_rslt + '\n')

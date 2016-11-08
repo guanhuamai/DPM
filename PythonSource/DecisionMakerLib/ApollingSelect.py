@@ -286,19 +286,24 @@ def apolling_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
     left_edges = []
 
     try:
-        edges_in_this_round = max_entropy()
+        edges_in_this_round = max_entropy()  # select edge using apolling
         for edge in edges_in_this_round:
             if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
                 print 'success selected', edge
                 return edge
     except Exception:
-        rest_edges = copy.deepcopy(all_edges)
-        for ans_edge in ans_edges:
-            rest_edges.remove(ans_edge)
-            rest_edges.remove((ans_edge[1], ans_edge[0]))
-        if len(rest_edges) != 0:
-            edge = rest_edges[np.random.choice(len(rest_edges), 1)[0]]
-            print 'failed, randomly selected', edge
-            return edge
-    print 'return none edge'
+        pass
+
+    rest_edges = copy.deepcopy(all_edges)  # select an edge from the rest randomly
+    for ans_edge in ans_edges:
+        rest_edges.remove(ans_edge)
+        rest_edges.remove((ans_edge[1], ans_edge[0]))
+    for nd in all_nodes:
+        rest_edges.remove((nd, nd))
+    if len(rest_edges) != 0:
+        edge = rest_edges[np.random.choice(len(rest_edges), 1)[0]]
+        print 'failed, randomly selected', edge
+        return edge
+
+    print 'return none edge'  # all edges've been selected
     return None

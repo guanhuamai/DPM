@@ -6,7 +6,7 @@ class RandomAllocator(BonusAllocator):
 
     def __init__(self, num_workers, base_cost=5, bns=2, p=1, t=10):
         super(RandomAllocator, self).__init__(num_workers, base_cost, bns, t)
-        print 'init an IOHMMBaseline bonus allocator'
+        print 'init a random bonus allocator'
         self.__probability = p
         self.set_parameters()
 
@@ -14,7 +14,7 @@ class RandomAllocator(BonusAllocator):
         self.__probability = p   # probability of giving bonus
 
     def train(self, train_data):
-        print 'train iohmm model'
+        print 'do nothing in training'
 
     def update(self, worker_ids, answers, spend, majority_vote):
         for i in range(len(worker_ids)):

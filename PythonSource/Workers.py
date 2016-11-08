@@ -1,7 +1,40 @@
 import numpy as np
 
 
-class UniformWorkers(object):
+class SimulationWorkers(object):
+    def __init__(self, num_workers, base_cost=5, bns=2):
+        # if simtype == 'uniform':
+        #     self.workers = UniformWorkers(num_workers)
+        # elif simtype == 'beta':
+        #     self.workers = BetaWorkers(num_workers)
+        # elif simtype == 'iohmm':
+        #     self.workers = IOHmmWorkers(num_workers)
+        # else:
+        #     print 'no such type of workers'
+        #     raise Exception
+
+        self._base_cost = base_cost
+        self._bns = bns
+        self.num_workers = num_workers
+        self.cmp_pair = (-1, -1)
+        self.qualities = None
+
+    def work(self, *args):
+        raise NotImplementedError('Please Implement this method')
+
+    def available_workers(self):
+        return range(self.num_workers)
+
+    def publish_questions(self, worker_ids, cmp_pair, salariess):
+        self.cmp_pair = cmp_pair
+        bns = [int(salary > self._base_cost) for salary in salariess]
+        self.qualities = self.work(worker_ids, bns)
+
+    def collect_answers(self):
+        return [int(quality == int(self.cmp_pair[0] < self.cmp_pair[1])) for quality in self.qualities]
+
+
+class UniformWorkers(SimulationWorkers):
     """
     initialize the worker model in uniform distribution.
         # model parameter:
@@ -9,7 +42,9 @@ class UniformWorkers(object):
         # input:
         #  num_workers: total number workers
     """
-    def __init__(self, num_workers):
+    def __init__(self, num_workers, base_cost=5, bns=2):
+        super(UniformWorkers, self).__init__(num_workers, base_cost=base_cost, bns=bns)
+
         self.behaviour = 'uniform'
         self.accMatrix = []  # 2 * 2 accurate matrix, row: bonus, not bonus, column: type 0, type 1
         self.accMatrix.append([0.5, 0.8])  # accuracy not  given bonus
@@ -29,7 +64,7 @@ class UniformWorkers(object):
         return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
 
 
-class BetaWorkers(object):
+class BetaWorkers(SimulationWorkers):
     """
     initialize the worker model in beta distribution.
         # model parameter:
@@ -37,7 +72,9 @@ class BetaWorkers(object):
         # input:
         #  numWorkers: total number workers
     """
-    def __init__(self, num_workers):
+    def __init__(self, num_workers, base_cost=5, bns=2):
+        super(BetaWorkers, self).__init__(num_workers, base_cost=base_cost, bns=bns)
+
         self.behaviour = 'beta'
         self.accMatrix = zip(np.random.beta(2, 2, num_workers), np.random.beta(6, 2, num_workers))
 
@@ -54,7 +91,7 @@ class BetaWorkers(object):
         return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
 
 
-class IOHmmWorkers(object):
+class IOHmmWorkers(SimulationWorkers):
     """
     initialize the worker model in iohmm.
         # model parameter:
@@ -67,7 +104,9 @@ class IOHmmWorkers(object):
         # input:
         #  numWorkers: total number workers
     """
-    def __init__(self, num_workers):
+    def __init__(self, num_workers, base_cost=5, bns=2):
+        super(IOHmmWorkers, self).__init__(num_workers, base_cost=base_cost, bns=bns)
+
         self.behaviour = 'iohmm'
 
         self.transition = []
@@ -96,7 +135,7 @@ class IOHmmWorkers(object):
     """
     def _update_state(self, worker_ids, bns):  # update hidden state for all workers
         self.z = [int(np.random.choice(len(self.transition[bns[i]]),  # number of hidden states
-                                   1, p=self.transition[bns[i]][self.z[worker_ids[i]]]))  # transition probability
+                                       1, p=self.transition[bns[i]][self.z[worker_ids[i]]]))  # transition probability
                   for i in range(len(worker_ids))]
 
     """
@@ -115,37 +154,6 @@ class IOHmmWorkers(object):
 
         self._update_state(worker_ids, bns)  # update hidden state
         return [np.random.choice(2, 1, p=[1 - prob, prob])[0] for prob in probs]  # return 0:low quality, 1:high quality
-
-
-class SimulationWorkers(object):
-    def __init__(self, num_workers, simtype, base_cost=5, bns=2):
-        if simtype == 'uniform':
-            self.workers = UniformWorkers(num_workers)
-        elif simtype == 'beta':
-            self.workers = BetaWorkers(num_workers)
-        elif simtype == 'iohmm':
-            self.workers = IOHmmWorkers(num_workers)
-        else:
-            print 'no such type of workers'
-            raise Exception
-
-        self._base_cost = base_cost
-        self._bns = bns
-        self.num_workers = num_workers
-        self.cmp_pair = (-1, -1)
-        self.qualities = None
-
-    def available_workers(self):
-        return range(self.num_workers)
-
-    def publish_questions(self, worker_ids, cmp_pair, salaries):
-        self.cmp_pair = cmp_pair
-        bns = [int(salary > self._base_cost) for salary in salaries]
-        self.qualities = self.workers.work(worker_ids, bns)
-
-    def collect_answers(self):
-        return [int(quality == int(self.cmp_pair[0] < self.cmp_pair[1])) for quality in self.qualities]
-
 
 if __name__ == '__main__':
     numWorkers = 5
