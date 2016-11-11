@@ -13,10 +13,15 @@ class BonusAllocator(object):
             weights = [0, 0.15, 0.0025]  # default value of the weights
         self.weights = weights
 
-    def train(self, *args):
-        raise NotImplementedError('Please Implement this method')
+    def update(self, worker_ids, answers, spend, majority_vote):
+        for i in range(len(worker_ids)):
+            try:
+                self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
+            except KeyError:
+                self.hist_qlt_bns[worker_ids[i]] = []
+                self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
 
-    def update(self, *args):
+    def train(self, *args):
         raise NotImplementedError('Please Implement this method')
 
     def bonus_alloc(self, *args):

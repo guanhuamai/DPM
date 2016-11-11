@@ -1,6 +1,5 @@
 from BonusAllocator import BonusAllocator
-from matlab import engine
-from os import path
+from IOHmmModel import IOHmmModel
 import numpy as np
 
 
@@ -18,21 +17,16 @@ class QLearningAllocator(BonusAllocator):
         self.__strt_prob = None  # start probability of hidden states, shape = 1 * S   fake...
         self.__tmat0 = None  # transition matrix with no bonus, shape = S * S, returned after training
         self.__tmat1 = None  # transiton matrix with bonus, shape = S * S, returned after training
-        self.__emat  = None  # emission matrix, shpe = S * O, returned after training
+        self.__emat = None  # emission matrix, shpe = S * O, returned after training
 
         self.__numitr = 0
         self.__q_mat = None
 
         self.set_parameters()
-        self.__matlab_engine = engine.start_matlab()
-        self.__matlab_engine.cd(path.join('..', 'MatlabSource', 'IOHMM'))
 
-    def __del__(self):
-        self.__matlab_engine.quit()
-
-    def set_parameters(self, nstates=3, ostates=2, strt_prob=None, numitr=1000, discnt=0.99, len_seq=10):
+    def set_parameters(self, nstates=2, ostates=2, strt_prob=None, numitr=1000, discnt=0.99, len_seq=10):
         if strt_prob is None:
-            strt_prob = [ 1.0 / nstates for _ in range(nstates)]
+            strt_prob = [1.0 / nstates for _ in range(nstates)]
 
         self.__discnt = discnt
         self.__nstates = nstates   # number of hidden states
@@ -42,35 +36,15 @@ class QLearningAllocator(BonusAllocator):
         self.__len_seq = len_seq
 
     def train(self, train_data):
-        print 'train iohmm model'
-
-        bonus_vec = [[0, 1], [1, 0]]
-        ou_obs = [[io_pairs[0] for io_pairs in seq] for seq in train_data]  # output observations of every sequences
-        in_obs = [[bonus_vec[int(io_pairs[1] > self._base_cost)] for io_pairs in seq]
-                  for seq in train_data]  # input observations of every sequences
-        model = self.__matlab_engine.iohmmTraining(ou_obs, in_obs, self.__nstates,
-                                                   self.__ostates, self.__numitr)
-        self.__tmat0 = list(model['A0'])
-        self.__tmat1 = list(model['A1'])
-        self.__emat = list(model['B'])
+        model = IOHmmModel()
+        model.set_parametes(nstates=self.__nstates, ostates=self.__ostates,
+                            strt_prob=self.__strt_prob, numitr=self.__numitr)
+        model.train(train_data, self._base_cost)
+        model_param = model.get_model()
+        self.__tmat0 = model_param[0]
+        self.__tmat1 = model_param[1]
+        self.__emat = model_param[2]
         self.__q_mat = [self.__cal_q(tc) for tc in range(self._t + 1)]  # include T moment
-
-    def update(self, worker_ids, answers, spend, majority_vote):
-        for i in range(len(worker_ids)):
-            try:
-                self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
-            except KeyError:
-                self.hist_qlt_bns[worker_ids[i]] = []
-                self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
-
-        train_data = []  # workers whose history list is long enough to train new iohmm model
-        for worker in self.hist_qlt_bns:
-            if len(self.hist_qlt_bns[worker]) >= self._t:
-                # train_data.append(self.hist_qlt_bns[worker])
-                train_data.append(self.hist_qlt_bns[worker][: self._t])  # cut off min_finish
-                self.hist_qlt_bns[worker] = self.hist_qlt_bns[worker][self._t:len(self.hist_qlt_bns[worker])]
-        if len(train_data) > 3:
-            self.train(train_data)
 
     def __viterbi(self, in_obs, ou_obs):  # tmats[0] transition matrix when not bonus
         t_val = list()

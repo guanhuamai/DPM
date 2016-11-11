@@ -14,7 +14,7 @@ class RandomAllocator(BonusAllocator):
         self.__probability = p   # probability of giving bonus
 
     def train(self, train_data):
-        print 'do nothing in training'
+        pass
 
     def update(self, worker_ids, answers, spend, majority_vote):
         for i in range(len(worker_ids)):
@@ -35,4 +35,3 @@ class RandomAllocator(BonusAllocator):
 
     def bonus_alloc(self, in_obs, ou_obs):
         return self._base_cost + self._bns * np.random.choice(2, 1, p=[1-self.__probability, self.__probability])[0]
-
