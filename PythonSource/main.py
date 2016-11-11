@@ -1,4 +1,5 @@
 import time
+import numpy as np
 from BonusAllocatorLib.MLSAllocator import MLSAllocator
 from BonusAllocatorLib.IOHMMBaseline import IOHMMBaseline
 from BonusAllocatorLib.QLearningAllocator import QLearningAllocator
@@ -133,9 +134,25 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
                                    spend, majority_vote)  # train new iohmm model to evaluate workers
     return rslts
 
+
+def gen_train_data(base_cost, bns, workers, num_tasks):
+    _train_data = [[] for _ in range(len(workers.available_workers))]
+    for _i in range(num_tasks):
+        spend = map(lambda x: base_cost + bns * x,
+                    np.random.choice(2, len(workers.available_workers()), p=[0.8, 0.2]))
+        workers.publish_questions(workers.available_workers(), (0, 1), spend)  # publish questions to workers
+
+        answers = workers.collect_answers()  # collect answers from workers
+
+        majority_vote = get_majority(answers)  # calculate the majority answer
+
+        for worker_id in workers.available_workers():
+            _train_data[worker_id].append((int(answers[worker_id] == majority_vote), spend[worker_id]))
+    return _train_data
+
 if __name__ == '__main__':
 
-    num_nd = 10
+    num_nd = 1000
     num_workers = 20
     base_costs = 5
     bonus = 2
@@ -157,14 +174,17 @@ if __name__ == '__main__':
     decision_makers = [lambda:Crowdbt(num_workers, num_nd),
                        lambda:Apolling(num_workers, num_nd)]
 
+    worker_model = IOHmmWorkers(3000, base_cost=base_costs, bns=bonus)
+    train_data = gen_train_data(base_costs, bonus, worker_model, 50)
+
     with open('rslt log', 'w') as log_file:
         log_file.write('WorkerType\tBonusType\tSelect&InferenceType\tSelectionRate\t'
                        'K\tTotalCost\tUtility\tPrecision\tRecall\tTimeSpend\n')
-        for i in range(len(worker_models)):
-            for j in range(len(bonus_allocators)):
-                for m in range(len(decision_makers)):
-                    results = do_experiment(worker_models[i](), bonus_allocators[4](),
-                                            decision_makers[m](), base_costs, bonus)
-                    for rslt in results:
-                        str_rslt = reduce(lambda x, y: str(x) + '\t' + str(y), rslt)
-                        log_file.write(str_rslt + '\n')
+        for i in range(len(bonus_allocators)):
+            bns_allocator = bonus_allocators[i]()
+            bns_allocator.train(train_data=train_data)
+            results = do_experiment(worker_models[2](), bonus_allocators[i](),
+                                    decision_makers[1](), base_costs, bonus)
+            for rslt in results:
+                str_rslt = reduce(lambda x, y: str(x) + '\t' + str(y), rslt)
+                log_file.write(str_rslt + '\n')
