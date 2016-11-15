@@ -34,11 +34,7 @@ class NStepAllocator(BonusAllocator):
         self.__nstep = nstep
         self.__len_seq = len_seq
 
-    def train(self, train_data):
-        model = IOHmmModel()
-        model.set_parametes(nstates=self.__nstates, ostates=self.__ostates,
-                            strt_prob=self.__strt_prob, numitr=self.__numitr)
-        model.train(train_data, self._base_cost)
+    def train(self, model):
         model_param = model.get_model()
         self.__tmat0 = model_param[0]
         self.__tmat1 = model_param[1]
@@ -104,4 +100,5 @@ class NStepAllocator(BonusAllocator):
             exp1 = self.__exp_utility(states, 1, self.__nstep)
             return self._base_cost + self._bns * int(exp1 > exp0)
         else:
+            print 'random bonus\n'
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]

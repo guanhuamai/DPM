@@ -17,11 +17,9 @@ class IOHmmModel(object):
         self.set_parametes()
 
         self.__matlab_engine = engine.start_matlab()
-        self.__matlab_engine.cd(path.join('MatlabSource', 'IOHMM'))
+        self.__matlab_engine.cd(path.join('..', 'MatlabSource', 'IOHMM'))
 
     def train(self, train_data, base_cost):  # input base cost to recognize which task is given bonus
-        print 'train iohmm model'
-
         bonus_vec = [[0, 1], [1, 0]]
         ou_obs = [[io_pairs[0] for io_pairs in seq] for seq in train_data]  # output observations of every sequences
         in_obs = [[bonus_vec[int(io_pairs[1] > base_cost)] for io_pairs in seq]

@@ -1,5 +1,4 @@
 import sys
-
 sys.path.append("..")
 import math
 import heapq
@@ -115,7 +114,7 @@ def computation_cov_matrix(test_edges):
         try:
             inv_matrix = record_inv_matrix[-1]
         except IndexError:
-            print 'index error in record_inv_matrix[-1]'
+            pass
 
     'For verification'
     '''
@@ -153,7 +152,7 @@ def gau_kl(curr_s, curr_matrix, past_s, past_matrix):
         try:
             factor2_2 = record_current_matrix[-1]
         except IndexError:
-            print 'index error in record_inv_matrix[-1]'
+            pass
 
     factor2_3 = curr_s - past_s
     factor2_4 = np.dot(factor2_1, factor2_2)
@@ -289,7 +288,6 @@ def apolling_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
         edges_in_this_round = max_entropy()  # select edge using apolling
         for edge in edges_in_this_round:
             if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
-                print 'success selected', edge
                 return edge
     except Exception:
         pass
@@ -302,7 +300,6 @@ def apolling_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
         rest_edges.remove((nd, nd))
     if len(rest_edges) != 0:
         edge = rest_edges[np.random.choice(len(rest_edges), 1)[0]]
-        print 'failed, randomly selected', edge
         return edge
 
     print 'return none edge'  # all edges've been selected

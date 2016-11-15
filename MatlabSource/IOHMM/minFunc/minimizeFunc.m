@@ -19,13 +19,13 @@ function [ minObj,parameters ] = minimizeFunc (funcObj,funcGrad,parameters,data 
 
         grad = funcGrad(parameters,data);
         newObj = funcObj(parameters,data);
-        assert(newObj - minObj < 1e-2);
+        %assert(newObj - minObj < 1e-2);
         minObj = newObj;
         numiter = numiter + 1;
         
         %disp(['Norm of gradient = ' num2str(norm(grad))]);
     end;
-    assert(minObj <= startObj);
+    %assert(minObj <= startObj);
     
 end
 

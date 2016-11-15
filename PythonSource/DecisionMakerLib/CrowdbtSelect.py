@@ -345,7 +345,6 @@ def select_pair_with_max_information():
         selected_triplet = (selected_edge[0], selected_edge[1], 0)
 
     if Count_Node[selected_triplet[0]] > threshold or Count_Node[selected_triplet[1]] > threshold:
-        print 'random choose\n'
         selected_edge = random.choice(list(set(edges) - set(Asked_Pairs)))
         selected_triplet = (selected_edge[0], selected_edge[1], 0)
 
@@ -405,18 +404,34 @@ def selection_process():
         Count_Node[loser] += 1
 
     selected_triplet = select_pair_with_max_information()
-    print selected_triplet
+    #  print selected_triplet
     return selected_triplet[0], selected_triplet[1]
 
 
 def crowdbt_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
+    if len(all_nodes) > 100:  # once number of query too large, randomly select all of the edges
+        rest_edges_nums = list(range((len(all_nodes) * len(all_nodes) - len(all_nodes)) / 2))
+        for ans_edge in ans_edges:
+            m = ans_edge[0]
+            n = ans_edge[1]
+            if m < n:
+                m = ans_edge[1]
+                n = ans_edge[0]
+            rest_edges_nums.remove(m * (m-1) / 2 + n)
+        select_edge_num = np.random.choice(rest_edges_nums, 1)[0]
+        for m in range(len(all_nodes)):
+            id_last_col = m * (m + 1) / 2 - 1
+            if id_last_col > select_edge_num:
+                n = select_edge_num - id_last_col + m - 1
+                return m, n
+        return None
+
     # pnum_workers = 10
     # all_nodes, ans_edges, ans_matrix = mall_process.mall_process()
     # all_edges = [(nodeA, nodeB)for nodeA in all_nodes for nodeB in all_nodes]
     Initial_Process(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix)
     edge = selection_process()
     if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:
-        print 'success selected', edge
         return edge
     else:
         rest_edges = copy.deepcopy(all_edges)
@@ -427,7 +442,5 @@ def crowdbt_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
             rest_edges.remove((nd, nd))
         if len(rest_edges) != 0:
             edge = rest_edges[np.random.choice(len(rest_edges), 1)[0]]
-            print 'failed, randomly selected', edge
             return edge
-    print 'return none edge'
     return None

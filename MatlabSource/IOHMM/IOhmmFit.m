@@ -52,6 +52,8 @@ function model = IOhmmFit(data, inputObs, model, numiter)
 %   1 x sequence number x (1 x inputDimension x (1 x ostates))
     ll = zeros(numiter,1);
     for i = 1:numiter
+        disp('number of iteration:')
+        disp(i)
         evidence = iocalculateEvidence(model, data, inputObs);
         [alph,bet,gam,xi,loglikelihood] = FBWpass(model, evidence, inputObs);
         ll(i) = sum(cell2mat(loglikelihood));

@@ -33,11 +33,7 @@ class MLSAllocator(BonusAllocator):
         self.__numitr = numitr     # number of iteration in EM algorithm
         self.__strt_prob = strt_prob
 
-    def train(self, train_data):
-        model = IOHmmModel()
-        model.set_parametes(nstates=self.__nstates, ostates=self.__ostates,
-                            strt_prob=self.__strt_prob, numitr=self.__numitr)
-        model.train(train_data, self._base_cost)
+    def train(self, model):
         model_param = model.get_model()
         self.__tmat0 = model_param[0]
         self.__tmat1 = model_param[1]
@@ -59,7 +55,7 @@ class MLSAllocator(BonusAllocator):
             fh.run()
             return list(fh.policy)
 
-        self.__policy = map(mdp_policy, range(1, len(train_data[0]) + 1))
+        self.__policy = map(mdp_policy, range(1, self._t + 1))
 
     def __viterbi(self, in_obs, ou_obs):  # tmats[0] transition matrix when not bonus
         t_val = list()
@@ -79,4 +75,5 @@ class MLSAllocator(BonusAllocator):
             tc = len(in_obs) % self._t
             return self._base_cost + self._bns * self.__policy[self._t - tc - 1][self.__viterbi(in_obs, ou_obs)][0]
         else:
+            print 'random bonus\n'
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]

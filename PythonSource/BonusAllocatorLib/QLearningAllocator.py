@@ -35,11 +35,7 @@ class QLearningAllocator(BonusAllocator):
         self.__numitr = numitr     # number of iteration in EM algorithm
         self.__len_seq = len_seq
 
-    def train(self, train_data):
-        model = IOHmmModel()
-        model.set_parametes(nstates=self.__nstates, ostates=self.__ostates,
-                            strt_prob=self.__strt_prob, numitr=self.__numitr)
-        model.train(train_data, self._base_cost)
+    def train(self, model):
         model_param = model.get_model()
         self.__tmat0 = model_param[0]
         self.__tmat1 = model_param[1]
@@ -85,4 +81,5 @@ class QLearningAllocator(BonusAllocator):
             exp1 = sum([states_belief[k] * self.__q_mat[self._t - tc][k][1] for k in range(self.__nstates)])
             return self._base_cost + self._bns * int(exp1 > exp0)
         else:
+            print 'random bonus\n'
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]

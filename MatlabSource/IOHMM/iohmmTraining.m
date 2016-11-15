@@ -1,4 +1,5 @@
 function decisionMatrix = iohmmTraining(observations, inputObs, nstates, ostates, numiter)
+    disp('start training iohmm model...')
     for i=1:size(observations, 2)
          observations{i} = real(cell2mat(observations{i})) + 1;
     end;
@@ -8,7 +9,6 @@ function decisionMatrix = iohmmTraining(observations, inputObs, nstates, ostates
         end;
         inputObs{i} = cell2mat(inputObs{i});
     end;
-    disp('start training iohmm')
     nstates = double(nstates);
     ostates = double(ostates);
     numiter = double(numiter);

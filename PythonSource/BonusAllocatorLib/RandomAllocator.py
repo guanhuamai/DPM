@@ -13,7 +13,7 @@ class RandomAllocator(BonusAllocator):
     def set_parameters(self, p=1):
         self.__probability = p   # probability of giving bonus
 
-    def train(self, train_data):
+    def train(self, model):
         pass
 
     def update(self, worker_ids, answers, spend, majority_vote):
