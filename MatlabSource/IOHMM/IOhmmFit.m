@@ -321,7 +321,7 @@ function grad = gradient(w,data)
         for j = 1:size(linputObs,2)-1
             probability = multiClassProbability(reshape(w,inputDimension,nstates-1)',linputObs(:,j+1));
             lxi_ = lxi(:,:,j);
-            assert(sum(lxi_(state,1:end)) - lgamma(state,j) < 1e-8);
+            %% assert(sum(lxi_(state,1:end)) - lgamma(state,j) < 1e-8);
             grad = grad + kron(lxi_(state,1:end-1)' - lgamma(state,j)*probability(1:end-1),linputObs(:,j+1));
         end;
     end;

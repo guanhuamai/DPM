@@ -409,26 +409,6 @@ def selection_process():
 
 
 def crowdbt_select(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix):
-    if len(all_nodes) > 100:  # once number of query too large, randomly select all of the edges
-        rest_edges_nums = list(range((len(all_nodes) * len(all_nodes) - len(all_nodes)) / 2))
-        for ans_edge in ans_edges:
-            m = ans_edge[0]
-            n = ans_edge[1]
-            if m < n:
-                m = ans_edge[1]
-                n = ans_edge[0]
-            rest_edges_nums.remove(m * (m-1) / 2 + n)
-        select_edge_num = np.random.choice(rest_edges_nums, 1)[0]
-        for m in range(len(all_nodes)):
-            id_last_col = m * (m + 1) / 2 - 1
-            if id_last_col > select_edge_num:
-                n = select_edge_num - id_last_col + m - 1
-                return m, n
-        return None
-
-    # pnum_workers = 10
-    # all_nodes, ans_edges, ans_matrix = mall_process.mall_process()
-    # all_edges = [(nodeA, nodeB)for nodeA in all_nodes for nodeB in all_nodes]
     Initial_Process(pnum_workers, all_nodes, all_edges, ans_edges, ans_matrix)
     edge = selection_process()
     if edge[0] != edge[1] and edge not in ans_edges and (edge[1], edge[0]) not in ans_edges:

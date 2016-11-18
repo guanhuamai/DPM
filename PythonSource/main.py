@@ -65,6 +65,7 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
     matrix = {}  # note down all votes, shape = num_nodes * num_nodes
 
     num_periter = ((len(decision_maker.all_edges) - len(decision_maker.all_nodes)) / 2) / 5
+    print 'number per iteration %d\n' % num_periter
 
     time_strt = time.time()
     cost = 0
@@ -100,6 +101,8 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
                           time_spend))
 
     while cmp_pair is not None:
+        if len(matrix) % 100 == 0:
+            print len(matrix)
         if (len(decision_maker.used_edges)) % num_periter == 0 and len(matrix) != 0:
             record_result()
 
@@ -131,7 +134,7 @@ def do_experiment(workers, bonus_allocator, decision_maker, base_cost, bns):
 
             decision_maker.update(cmp_pair, answers)
             bonus_allocator.update(workers.available_workers(), answers,
-                                   spend, majority_vote)  # train new iohmm model to evaluate workers
+                                   spend, majority_vote)
     return rslts
 
 
@@ -149,6 +152,7 @@ def gen_train_data(base_cost, bns, workers, num_tasks):
         for worker_id in workers.available_workers():
             _train_data[worker_id].append((int(answers[worker_id] == majority_vote), spend[worker_id]))
     return _train_data
+
 
 if __name__ == '__main__':
 
@@ -174,10 +178,10 @@ if __name__ == '__main__':
     decision_makers = [lambda:Crowdbt(num_workers, num_nd),
                        lambda:Apolling(num_workers, num_nd)]
 
-    worker_model = IOHmmWorkers(500, base_cost=base_costs, bns=bonus)
-    train_data = gen_train_data(base_costs, bonus, worker_model, 50)
+    # worker_model = IOHmmWorkers(3000, base_cost=base_costs, bns=bonus)
+    # train_data = gen_train_data(base_costs, bonus, worker_model, 50)
     iohmmmodel = IOHmmModel()
-    #  iohmmmodel.train(train_data, base_costs)
+    # iohmmmodel.train(train_data, base_costs)
     iohmmmodel.read_model('iohmm.model.500')
 
     with open('rslt log500', 'w') as log_file:

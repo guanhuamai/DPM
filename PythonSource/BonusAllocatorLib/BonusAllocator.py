@@ -21,6 +21,15 @@ class BonusAllocator(object):
                 self.hist_qlt_bns[worker_ids[i]] = []
                 self.hist_qlt_bns[worker_ids[i]].append((int(answers[i] == majority_vote), spend[i]))
 
+    def strip_hist(self, worker_ids):  # strip the history for some workers
+        for i in range(len(worker_ids)):
+            try:
+                hist = self.hist_qlt_bns[worker_ids[i]]
+                hist = hist[len(hist) - (len(hist) % self._t):len(hist)]
+                self.hist_qlt_bns[worker_ids[i]] = hist
+            except KeyError:
+                self.hist_qlt_bns[worker_ids[i]] = []
+
     def train(self, *args):
         raise NotImplementedError('Please Implement this method')
 
