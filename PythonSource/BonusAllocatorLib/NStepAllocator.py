@@ -1,5 +1,4 @@
 from BonusAllocator import BonusAllocator
-from IOHmmModel import IOHmmModel
 import numpy as np
 
 
@@ -100,5 +99,4 @@ class NStepAllocator(BonusAllocator):
             exp1 = self.__exp_utility(states, 1, self.__nstep)
             return self._base_cost + self._bns * int(exp1 > exp0)
         else:
-            print 'random bonus\n'
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]

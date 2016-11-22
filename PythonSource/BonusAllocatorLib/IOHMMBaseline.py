@@ -76,5 +76,4 @@ class IOHMMBaseline(BonusAllocator):
             exp1 = self.__cal_reward(states_belief, 1)
             return self._base_cost + self._bns * int(exp1 > exp0)
         else:
-            print 'random bonus\n'
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]

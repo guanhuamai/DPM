@@ -81,5 +81,4 @@ class QLearningAllocator(BonusAllocator):
             exp1 = sum([states_belief[k] * self.__q_mat[self._t - tc][k][1] for k in range(self.__nstates)])
             return self._base_cost + self._bns * int(exp1 > exp0)
         else:
-            print 'random bonus\n'
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]

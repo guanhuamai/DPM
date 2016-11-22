@@ -75,5 +75,4 @@ class MLSAllocator(BonusAllocator):
             tc = len(in_obs) % self._t
             return self._base_cost + self._bns * self.__policy[self._t - tc - 1][self.__viterbi(in_obs, ou_obs)][0]
         else:
-            print 'random bonus\n'
             return self._base_cost + self._bns * np.random.choice(2, 1)[0]
