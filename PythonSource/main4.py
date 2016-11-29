@@ -36,7 +36,7 @@ if __name__ == '__main__':
     num_nd = 1000
     num_workers = 5
     base_cost = 45
-    bns = 5
+    bns = 3
 
     num_ans_pair = 0
     bns_time = 0
@@ -44,12 +44,12 @@ if __name__ == '__main__':
     pair_list = []
     cnt_list = []
 
-    statistics = []
+    statistics = {}
     with open(fpath, 'r') as f:
 
         lines = f.readlines()
-
         for line in lines:
+
             line = line.split('\t')
             if line[0] == 'WorkerType':
 
@@ -74,21 +74,36 @@ if __name__ == '__main__':
                 cnt_list.append(num_workers - num_correct_ans)
                 cnt_list.append(num_correct_ans)
 
-            if num_ans_pair % (49950 * 2) == 0 and num_ans_pair != 0:
+            if num_ans_pair % 49950 == 0 and num_ans_pair != 0:
                 cbt_eng = Crowdbt(5, num_nd)
                 cbt_eng.matrix = dict(zip(pair_list, cnt_list))
-                seq = cbt_eng.result_inference()
+                print 'inferencing %.2lf%%...\n' % (float(num_ans_pair) / 4995)
+                # seq = cbt_eng.result_inference()
+                # print seq[0:10]
 
-                prec, recal = cal_precision_recall(seq, range(num_nd), 10)
+                # prec, recal = cal_precision_recall(seq, range(num_nd), 10)
 
                 util = 0 * (num_ans_pair - total_num_correct_ans) + \
                     0.15 * total_num_correct_ans - \
                     0.05 * bns_time
 
-                cost = base_cost * num_ans_pair / 10 / num_workers + bns_time * bns
+                cost = bns_time * bns
 
-                statistics.append((num_ans_pair, util, prec, recal, cost))
+                s_id = num_ans_pair / 49950
+                try:
+                    statistics[s_id].append((num_ans_pair, total_num_correct_ans, bns_time, cost, util))
+                except KeyError:
+                    statistics[s_id] = []
+                    statistics[s_id].append((num_ans_pair, total_num_correct_ans, bns_time, cost, util))
+
+            # elif num_ans_pair % 5000 == 0:
+            #     print num_ans_pair
 
     with open(fpath + '.result', 'w') as f:
-        statistics = map(lambda stats: reduce(lambda x, y: str(x) + '\t' + str(y), stats) + '\n',  statistics)
-        f.write(statistics)
+        # statistics = map(lambda stats: reduce(lambda x, y: str(x) + '\t' + str(y), stats) + '\n',  statistics)
+        for stat in statistics:
+            stat = reduce(lambda x, y: [x[0] + y[0], x[1] + y[1], x[2] + y[2], x[3] + y[3], x[4] + y[4]],
+                          statistics[stat])
+            stat = map(lambda x: x / 30, stat)
+            stat = reduce(lambda x, y: str(x) + '\t' + str(y), stat) + '\n'
+            f.write(stat)

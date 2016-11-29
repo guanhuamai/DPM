@@ -2,7 +2,7 @@ import numpy as np
 
 
 class SimulationWorkers(object):
-    def __init__(self, num_workers, base_cost=5, bns=2):
+    def __init__(self, num_workers, base_cost=45, bns=5):
         # if simtype == 'uniform':
         #     self.workers = UniformWorkers(num_workers)
         # elif simtype == 'beta':
@@ -31,7 +31,7 @@ class SimulationWorkers(object):
         self.qualities = self.work(worker_ids, bns)
 
     def collect_answers(self):
-        return [int(quality == int(self.cmp_pair[0] < self.cmp_pair[1])) for quality in self.qualities]
+        return [int(quality != int(self.cmp_pair[0] < self.cmp_pair[1])) for quality in self.qualities]
 
 
 class UniformWorkers(SimulationWorkers):
@@ -45,7 +45,7 @@ class UniformWorkers(SimulationWorkers):
     def __init__(self, num_workers, base_cost=5, bns=2):
         super(UniformWorkers, self).__init__(num_workers, base_cost=base_cost, bns=bns)
 
-        print 'init uniform worker model'
+        print 'init uniform worker model %d %d %d\n' % (num_workers, base_cost, bns)
 
         self.behaviour = 'uniform'
         self.accMatrix = []  # 2 * 2 accurate matrix, row: bonus, not bonus, column: type 0, type 1
@@ -108,7 +108,7 @@ class IOHmmWorkers(SimulationWorkers):
         # input:
         #  numWorkers: total number workers
     """
-    def __init__(self, num_workers, base_cost=5, bns=2):
+    def __init__(self, num_workers, base_cost=45, bns=5):
         super(IOHmmWorkers, self).__init__(num_workers, base_cost=base_cost, bns=bns)
 
         print 'init iohmm worker model'
@@ -163,7 +163,7 @@ class IOHmmWorkers(SimulationWorkers):
 
 if __name__ == '__main__':
     numWorkers = 5
-    workerIDs = range(0, 3, 1)
-    salaries = [1, 0, 0]
+    workerIDs = range(0, 5, 1)
+    salaries = [1, 1, 1, 1, 1]
     workers = IOHmmWorkers(numWorkers)
     print workers.work(workerIDs, salaries)

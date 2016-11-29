@@ -4,8 +4,8 @@ import numpy as np
 
 class NStepAllocator(BonusAllocator):
 
-    def __init__(self, num_workers, nstep=5, len_seq=10, base_cost=5, bns=2, t=10, weigths=None):
-        super(NStepAllocator, self).__init__(num_workers, base_cost, bns, t, weigths)
+    def __init__(self, num_workers, nstep=5, len_seq=10, base_cost=5, bns=2, t=10, weights=None):
+        super(NStepAllocator, self).__init__(num_workers, base_cost, bns, t, weights)
         print 'init an nstep look ahead bonus allocator'
         
         self.__nstep = nstep
@@ -22,7 +22,7 @@ class NStepAllocator(BonusAllocator):
 
         self.set_parameters()
 
-    def set_parameters(self, nstates=2, ostates=2, strt_prob=None, numitr=1000, nstep=5, len_seq=10):
+    def set_parameters(self, nstates=2, ostates=2, strt_prob=None, numitr=1000, nstep=2, len_seq=10):
         if strt_prob is None:
             strt_prob = [1.0 / nstates for _ in range(nstates)]
 
@@ -39,7 +39,7 @@ class NStepAllocator(BonusAllocator):
         self.__tmat1 = model_param[1]
         self.__emat = model_param[2]
 
-    def __viterbi(self, in_obs, ou_obs):  # tmats[0] transition matrix when not bonus
+    def __pseudo_viterbi(self, in_obs, ou_obs):  # tmats[0] transition matrix when not bonus
         t_val = list()
         t_val.append([self.__strt_prob[i] * self.__emat[i][ou_obs[0]] for i in range(self.__nstates)])  # 1 * N
         tmats = (self.__tmat0, self.__tmat1)
@@ -93,7 +93,7 @@ class NStepAllocator(BonusAllocator):
 
     def bonus_alloc(self, in_obs, ou_obs):
         if self.__emat is not None and in_obs is not None and ou_obs is not None:
-            states = self.__viterbi(in_obs, ou_obs)
+            states = self.__pseudo_viterbi(in_obs, ou_obs)
             # print states
             exp0 = self.__exp_utility(states, 0, self.__nstep)
             exp1 = self.__exp_utility(states, 1, self.__nstep)

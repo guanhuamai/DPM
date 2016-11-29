@@ -8,7 +8,7 @@ class RandomAllocator(BonusAllocator):
         super(RandomAllocator, self).__init__(num_workers, base_cost, bns, t)
         print 'init a random bonus allocator'
         self.__probability = p
-        self.set_parameters()
+        self.set_parameters(p)
 
     def set_parameters(self, p=1):
         self.__probability = p   # probability of giving bonus

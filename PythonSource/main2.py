@@ -24,7 +24,7 @@ def find_pair_by_id(pair_id, num_nodes):
 
 def get_majority(answers):
     cnt1 = sum(answers)
-    return int(cnt1 >= (len(answers) / 2))
+    return int(cnt1 >= (len(answers) / 2.0))
 
 
 def gen_simulation_data(workers, bonus_allocator, num_nodes, base_cost, bns):
@@ -56,11 +56,11 @@ def gen_simulation_data(workers, bonus_allocator, num_nodes, base_cost, bns):
             else:
                 spend.append(bonus_allocator.bonus_alloc(None, None))
         t_end1 = time.time()
+        # print sum(spend)
 
         workers.publish_questions(workers.available_workers(), cmp_pair, spend)  # publish questions to workers
 
         answers = workers.collect_answers()  # collect answers from workers
-
         majority_vote = get_majority(answers)  # calculate the majority answer
 
         bonus_allocator.update(workers.available_workers(), answers, spend, majority_vote)
@@ -104,7 +104,9 @@ if __name__ == '__main__':
                         lambda: MLSAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t),
                         lambda: NStepAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t),
                         lambda: QLearningAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t),
-                        lambda: RandomAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t)]
+                        lambda: RandomAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t, p=1),
+                        lambda: RandomAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t, p=0),
+                        lambda: RandomAllocator(num_workers, base_cost=base_costs, bns=bonus, t=t, p=0.5)]
     decision_makers = [lambda: Crowdbt(num_workers, num_nd),
                        lambda: Apolling(num_workers, num_nd)]
 
@@ -112,12 +114,12 @@ if __name__ == '__main__':
     iohmmmodel.read_model('iohmm.model.500')
     for i in range(30):
         print 'iteration %d:\n' % i
-        bns_allocator = bonus_allocators[bonus_id]()
+        bns_allocator = bonus_allocators[1]()
         bns_allocator.train(model=iohmmmodel)
         results = gen_simulation_data(worker_models[2](), bns_allocator,
                                       num_nd, base_costs, bonus)
 
-        with open(type(bns_allocator).__name__, 'a') as log_file:
+        with open(type(bns_allocator).__name__ + '.' + str(bonus_id), 'a') as log_file:
             log_file.write('WorkerType\tBonusType\tpair\t'
                            'TotalCost\tCorrectAnswers\tTimeSpend\n')
             for res in results:

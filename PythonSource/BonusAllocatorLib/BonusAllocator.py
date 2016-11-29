@@ -10,7 +10,7 @@ class BonusAllocator(object):
         self._t = t
 
         if weights is None:
-            weights = [0, 0.15, 0.03]  # default value of the weights
+            weights = [0, 0.15, 0.05]  # default value of the weights
         self.weights = weights
 
     def update(self, worker_ids, answers, spend, majority_vote):

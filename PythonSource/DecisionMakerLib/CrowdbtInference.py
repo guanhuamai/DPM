@@ -26,6 +26,7 @@ def CrowdBT_optimization(s):
                 s[i]) / (math.exp(1.0) + math.exp(s[i]) + balance)
             SUM += 0.5 * (math.log10(factor3) + math.log10(factor4))
     except Exception:
+        print 'sth weired happened...'
         return -1 * SUM
 
     return -1 * SUM
@@ -35,11 +36,13 @@ def optimization_crowdbt():
     x0 = [1.0] * len(nodes)
     res = minimize(
         CrowdBT_optimization, x0, method='BFGS', options={"maxiter": 100})
+    print 'finish optimize...'
     score = {}
     for i in range(len(nodes)):
         score[i] = res.x[i]
     sorted_score = sorted(
         score.items(), lambda x, y: cmp(x[1], y[1]), reverse=True)
+    print 'finish sort...'
     return [item[0] for item in sorted_score]
 
 
@@ -54,6 +57,6 @@ def crowdbt_inference(allNodes, allEdges, matrix):
                 edges.append(edge)
         except KeyError:
             Matrix[edge] = 0
+    print 'finish copying...'
     rslt = optimization_crowdbt()
-    print rslt
     return rslt

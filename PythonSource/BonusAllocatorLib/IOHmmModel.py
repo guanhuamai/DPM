@@ -47,6 +47,7 @@ class IOHmmModel(object):
             model_f.write(str(self.__nstates) + '\n')
             model_f.write(str(self.__ostates) + '\n')
             model_f.write(str(self.__strt_prob) + '\n')
+            model_f.write(reduce(lambda x, y: str(x) + '\t' + str(y), self.__strt_prob) + '\n')
             for i in range(self.__nstates):
                 model_f.write(reduce(lambda x, y: str(x) + '\t' + str(y), self.__tmat0[i]) + '\n')
             for i in range(self.__nstates):
@@ -63,9 +64,17 @@ class IOHmmModel(object):
             self.__tmat0 = []
             for i in range(self.__nstates):
                 self.__tmat0.append(map(lambda x: float(x), lines[3 + i].split('\t')))
+                self.__tmat0[i][-1] = 0
+                self.__tmat0[i][-1] = 1 - sum(self.__tmat0[i])
+
             self.__tmat1 = []
             for i in range(self.__nstates):
                 self.__tmat1.append(map(lambda x: float(x), lines[3 + self.__nstates + i].split('\t')))
+                self.__tmat1[i][-1] = 0
+                self.__tmat1[i][-1] = 1 - sum(self.__tmat1[i])
+
             self.__emat = []
             for i in range(self.__nstates):
                 self.__emat.append(map(lambda x: float(x), lines[3 + 2 * self.__nstates + i].split('\t')))
+                self.__emat[i][-1] = 0
+                self.__emat[i][-1] = 1 - sum(self.__emat[i])
